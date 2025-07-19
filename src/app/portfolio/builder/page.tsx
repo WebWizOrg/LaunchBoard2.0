@@ -224,6 +224,13 @@ export default function PortfolioBuilderPage() {
   const [portfolioData, setPortfolioData] = useState<DocumentData | null>(null);
   const sensors = useSensors(useSensor(PointerSensor));
 
+  useEffect(() => {
+    if(!portfolioId) {
+        router.push('/dashboard');
+    }
+  }, [portfolioId, router]);
+
+
   const debouncedSave = useCallback(
     debounce((dataToSave) => {
       if (!user || !portfolioId) return;
@@ -246,11 +253,7 @@ export default function PortfolioBuilderPage() {
   }, [portfolioData, debouncedSave, isDataLoaded]);
 
   useEffect(() => {
-    if (!user) return;
-    if (!portfolioId) {
-        router.push('/dashboard');
-        return;
-    }
+    if (!user || !portfolioId) return;
 
     const portfolioRef = doc(db, 'users', user.uid, 'portfolios', portfolioId);
     
@@ -270,7 +273,7 @@ export default function PortfolioBuilderPage() {
     });
 
     return () => unsubscribe();
-  }, [user, portfolioId, router]);
+  }, [user, portfolioId]);
   
   if (!isDataLoaded || !portfolioData) {
     return (
