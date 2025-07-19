@@ -88,17 +88,22 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
   const OriginalBuilder = builderModule.default;
   const builderProto = OriginalBuilder.prototype;
   
-  const mockRenderSectionComponent = (section, context) => {
-    return builderProto.renderSectionComponent.call({
+  const mockRenderSectionComponent = (section: any, context: any) => {
+    // Re-create a minimal 'this' context needed for the unbound function
+    const mockThis = {
         state: { resumeData, isPreviewing: true, theme },
-        props: { resumeData },
+        props: { resumeData }, // Ensure props are available if needed by the function
+        // Mock any state setters it might try to call
         handleContentChange: () => {},
         handleListItemChange: () => {},
         addListItem: () => {},
         removeListItem: () => {},
         handleAvatarUpload: () => {},
         handleImageUpload: () => {},
-    }, section, { ...context, isPublicView: true });
+    };
+
+    // Use .call() to invoke renderSectionComponent with our mocked context
+    return builderProto.renderSectionComponent.call(mockThis, section, { ...context, isPublicView: true });
   }
   
   const boundRenderTemplate = builderProto.renderTemplate.bind({ 
@@ -119,14 +124,11 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
 }
 
 export default function SharePage({ params }: { params: { id: string } }) {
-  // useEffect(() => {
-  //   // Force light theme for consistency in shared view, but can be changed by user
-  //   // setTheme('light');
-  // }, [setTheme]);
+  const { id } = params;
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-muted/40 p-4 sm:p-8">
-      <ReadOnlyResume resumeId={params.id} />
+      <ReadOnlyResume resumeId={id} />
     </div>
   );
 }
