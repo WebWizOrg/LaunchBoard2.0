@@ -269,7 +269,7 @@ const createNewItem = (itemType) => {
     }
 };
 
-const defaultResumeData = {
+export const defaultResumeData = {
   name: 'Untitled Resume',
   isPublished: false,
   sections: [
