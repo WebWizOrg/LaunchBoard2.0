@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useTransition, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import {
   DndContext,
   closestCenter,
@@ -44,6 +45,7 @@ import {
   Share2,
   Sparkles,
   Star,
+  Trash2,
   Type,
   User,
   Video,
@@ -80,6 +82,7 @@ import { getAiPoweredResumeRecommendations } from '@/ai/flows/smart-recommendati
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
+import { Slider } from '@/components/ui/slider';
 
 // Wrapper to prevent hydration errors with dnd-kit
 function ClientOnly({ children }: { children: React.ReactNode }) {
@@ -165,14 +168,16 @@ function SortableResumeSection({ id, children, onRemove }) {
     transition,
     zIndex: isDragging ? 10 : 'auto',
   };
+  const baseId = id.split('_')[0];
+  const isRemovable = baseId !== 'header';
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} className="relative group">
        <div {...listeners} className="absolute -left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
         <GripVertical />
        </div>
-       {id !== 'header' && (
-         <button onClick={() => onRemove(id)} className="absolute -right-2 -top-2 h-6 w-6 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary opacity-0 group-hover:opacity-100 transition-opacity">
+       {isRemovable && (
+         <button onClick={() => onRemove(id)} className="absolute -right-2 -top-2 h-6 w-6 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:border-destructive opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <X className="h-4 w-4" />
          </button>
        )}
@@ -181,27 +186,53 @@ function SortableResumeSection({ id, children, onRemove }) {
   );
 }
 
+const createNewItem = (type) => {
+    const common = { id: `${type}_${Date.now()}` };
+    switch (type) {
+        case 'experience':
+        case 'projects':
+            return { ...common, company: '', role: '', dates: '', description: '' };
+        case 'education':
+            return { ...common, institution: '', degree: '', dates: '', description: '' };
+        case 'certifications':
+            return { ...common, name: '', issuer: '', date: '' };
+        default:
+            return { ...common, text: '' };
+    }
+};
 
 export default function BuilderPage() {
   const [saveStatus, setSaveStatus] = useState('Saved');
   const [activeId, setActiveId] = useState(null);
-  const [resumeData, setResumeData] = useState({
+  
+  const [resumeData, setResumeData] = useState(() => ({
      sections: [
-        {id: 'header', title: 'Header'},
-        {id: 'summary', title: 'Summary'},
-        {id: 'experience', title: 'Experience'}
+        {id: 'header_1', type: 'header'},
+        {id: 'summary_1', type: 'summary'},
+        {id: 'experience_1', type: 'experience'}
      ],
-     content: {}
-  });
+     content: {
+        header_1: { name: 'Your Name', tagline: 'Your Tagline or Role', avatar: '' },
+        summary_1: { title: 'Summary', text: '' },
+        experience_1: {
+            title: 'Experience',
+            items: [
+                { id: 'exp_item_1', company: 'Company Name', role: 'Job Title', dates: 'Month Year - Present', description: '• Your achievements here.' }
+            ]
+        }
+     }
+  }));
 
   const { theme } = useTheme();
 
   const [styling, setStyling] = useState({
       primaryColor: '#1d4ed8',
       backgroundColorLight: '#ffffff',
-      backgroundColorDark: '#111827',
+      backgroundColorDark: '#1f2937', // Lighter than before
       fontFamily: 'var(--font-inter)',
       backgroundImage: '',
+      backgroundBlur: 0,
+      backgroundBrightness: 100,
   });
 
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
@@ -215,6 +246,71 @@ export default function BuilderPage() {
   const handleStyleChange = (property, value) => {
     setStyling(prev => ({ ...prev, [property]: value }));
   };
+
+  const handleContentChange = (sectionId, field, value) => {
+    setResumeData(prev => ({
+        ...prev,
+        content: {
+            ...prev.content,
+            [sectionId]: {
+                ...prev.content[sectionId],
+                [field]: value
+            }
+        }
+    }));
+  };
+
+  const handleListItemChange = (sectionId, itemIndex, field, value) => {
+      setResumeData(prev => {
+          const newItems = [...prev.content[sectionId].items];
+          newItems[itemIndex] = { ...newItems[itemIndex], [field]: value };
+          return {
+              ...prev,
+              content: {
+                  ...prev.content,
+                  [sectionId]: {
+                      ...prev.content[sectionId],
+                      items: newItems
+                  }
+              }
+          };
+      });
+  };
+
+  const addListItem = (sectionId, itemType) => {
+      setResumeData(prev => {
+          const newItem = createNewItem(itemType);
+          const newItems = [...(prev.content[sectionId].items || []), newItem];
+          return {
+              ...prev,
+              content: {
+                  ...prev.content,
+                  [sectionId]: {
+                      ...prev.content[sectionId],
+                      items: newItems
+                  }
+              }
+          };
+      });
+  };
+
+  const removeListItem = (sectionId, itemIndex) => {
+      setResumeData(prev => {
+          const newItems = [...prev.content[sectionId].items];
+          newItems.splice(itemIndex, 1);
+          return {
+              ...prev,
+              content: {
+                  ...prev.content,
+                  [sectionId]: {
+                      ...prev.content[sectionId],
+                      items: newItems
+                  }
+              }
+          };
+      });
+  };
+
 
   const handleFontChange = (fontFamily) => {
     handleStyleChange('fontFamily', fontFamily);
@@ -231,6 +327,21 @@ export default function BuilderPage() {
     }
   };
 
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              const headerSectionId = resumeData.sections.find(s => s.type === 'header')?.id;
+              if (headerSectionId) {
+                  handleContentChange(headerSectionId, 'avatar', reader.result as string);
+              }
+          };
+          reader.readAsDataURL(file);
+      }
+  };
+
+
   const handleDragStart = (event) => setActiveId(event.active.id);
 
   const handleDragEnd = (event) => {
@@ -238,38 +349,33 @@ export default function BuilderPage() {
     setActiveId(null);
     if (!over) return;
   
-    // This is the ID of the droppable container for the resume canvas
-    const resumeCanvasDroppableId = 'resume-canvas-droppable';
-    
     const isSidebarItem = allSectionsMap.has(active.id);
-    // Check if dropping over the droppable container OR any existing item on the canvas
-    const isOverCanvas = over.id === resumeCanvasDroppableId || resumeSectionsIds.includes(over.id);
+    const isCanvasItem = resumeSectionsIds.includes(active.id);
   
-    if (isSidebarItem && isOverCanvas) {
-      // Adding a new item from the sidebar
-      const newSection = allSectionsMap.get(active.id);
-      // Generate a unique ID for the new section to allow multiple instances
-      const newSectionData = { id: `${newSection.id}_${Date.now()}`, title: newSection.name };
-      
-      const overIndex = resumeData.sections.findIndex(s => s.id === over.id);
-      
-      setResumeData((prev) => {
-        const newSections = [...prev.sections];
-        if (overIndex !== -1) {
-          // If dropped on an existing section, insert after it
-          newSections.splice(overIndex + 1, 0, newSectionData);
-        } else {
-          // If dropped on the container itself or empty space, add to the end
-          newSections.push(newSectionData);
+    if (isSidebarItem && over.id === 'resume-canvas-droppable') {
+        const newSectionType = active.id;
+        const newSectionId = `${newSectionType}_${Date.now()}`;
+        const newSectionData = { id: newSectionId, type: newSectionType };
+        const defaultContent = { title: allSectionsMap.get(newSectionType)?.name || 'New Section' };
+        
+        if (['experience', 'education', 'projects', 'certifications'].includes(newSectionType)) {
+            defaultContent.items = [];
+        } else if (newSectionType === 'header') { // This shouldn't happen, but as a fallback
+            defaultContent.name = 'Your Name';
+            defaultContent.tagline = 'Your Role';
+            defaultContent.avatar = '';
         }
-        return { ...prev, sections: newSections };
-      });
-    } else if (resumeSectionsIds.includes(active.id)) {
+
+        setResumeData(prev => ({
+            sections: [...prev.sections, newSectionData],
+            content: { ...prev.content, [newSectionId]: defaultContent }
+        }));
+    } else if (isCanvasItem && resumeSectionsIds.includes(over.id)) {
       // Reordering an existing item on the canvas
       const activeIndex = resumeData.sections.findIndex(s => s.id === active.id);
       const overIndex = resumeData.sections.findIndex(s => s.id === over.id);
   
-      if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
+      if (activeIndex !== overIndex) {
         setResumeData((prev) => ({
           ...prev,
           sections: arrayMove(prev.sections, activeIndex, overIndex),
@@ -277,21 +383,17 @@ export default function BuilderPage() {
       }
     }
   };
+  
 
   const removeSection = (idToRemove) => {
-    setResumeData(prev => ({
-        ...prev,
-        sections: prev.sections.filter(section => section.id !== idToRemove)
-    }));
-  };
-
-  const updateSectionTitle = (id, newTitle) => {
-    setResumeData(prev => ({
-        ...prev,
-        sections: prev.sections.map(section => 
-            section.id === id ? { ...section, title: newTitle } : section
-        )
-    }));
+    setResumeData(prev => {
+        const newContent = { ...prev.content };
+        delete newContent[idToRemove];
+        return {
+            sections: prev.sections.filter(section => section.id !== idToRemove),
+            content: newContent
+        };
+    });
   };
 
   const handleGetSuggestions = () => {
@@ -341,48 +443,114 @@ export default function BuilderPage() {
     }
   };
 
-
   const renderSection = (section) => {
-    const baseId = section.id.split('_')[0];
-    switch (baseId) {
+    const content = resumeData.content[section.id] || {};
+  
+    switch (section.type) {
       case 'header':
         return (
-          <div className="text-center">
+          <div className="text-center flex flex-col items-center gap-4">
+              <div className="relative group w-32 h-32">
+                  <Image
+                      src={content.avatar || 'https://placehold.co/128x128'}
+                      alt="Avatar"
+                      width={128}
+                      height={128}
+                      className="rounded-full object-cover w-32 h-32 border-2 border-primary/50"
+                  />
+                  <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ImageIcon className="h-8 w-8" />
+                  </label>
+                  <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+              </div>
             <Input
-              defaultValue="Your Name"
+              value={content.name}
+              onChange={(e) => handleContentChange(section.id, 'name', e.target.value)}
               className="text-4xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent"
               style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}
             />
             <Input
-              defaultValue="Your Tagline or Role"
+              value={content.tagline}
+              onChange={(e) => handleContentChange(section.id, 'tagline', e.target.value)}
               className="text-muted-foreground p-0 border-0 h-auto text-center focus-visible:ring-0 bg-transparent"
             />
           </div>
         );
-       case 'summary':
-       case 'experience':
+      case 'summary':
+      case 'cover_letter':
+          return (
+              <div className="mt-6">
+                  <Input value={content.title} onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} className="text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent inline-block w-auto mb-2" style={{ borderBottom: '2px solid var(--resume-primary)', fontFamily: 'var(--resume-font-headline, var(--font-headline))' }} />
+                  <Textarea value={content.text} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
+              </div>
+          );
+      case 'experience':
+      case 'projects':
+      case 'education':
+      case 'certifications':
+        const itemType = section.type.slice(0, -1); // 'experience' -> 'experienc'
+        return (
+            <div className="mt-6">
+                 <Input value={content.title} onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} className="text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent inline-block w-auto mb-2" style={{ borderBottom: '2px solid var(--resume-primary)', fontFamily: 'var(--resume-font-headline, var(--font-headline))' }} />
+                 <div className="space-y-4">
+                     {(content.items || []).map((item, index) => (
+                         <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
+                             <button onClick={() => removeListItem(section.id, index)} className="absolute top-0 -right-2 h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>
+                             {section.type === 'education' && (
+                                 <>
+                                     <Input placeholder="Institution Name" value={item.institution} onChange={(e) => handleListItemChange(section.id, index, 'institution', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                     <Input placeholder="Degree or Field of Study" value={item.degree} onChange={(e) => handleListItemChange(section.id, index, 'degree', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                 </>
+                             )}
+                             {section.type === 'experience' && (
+                                 <>
+                                     <Input placeholder="Company Name" value={item.company} onChange={(e) => handleListItemChange(section.id, index, 'company', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                     <Input placeholder="Your Role" value={item.role} onChange={(e) => handleListItemChange(section.id, index, 'role', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                 </>
+                             )}
+                             {section.type === 'projects' && (
+                                  <>
+                                     <Input placeholder="Project Name" value={item.company} onChange={(e) => handleListItemChange(section.id, index, 'company', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                     <Input placeholder="Tech Stack" value={item.role} onChange={(e) => handleListItemChange(section.id, index, 'role', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-sm text-muted-foreground" />
+                                 </>
+                             )}
+                              {section.type === 'certifications' && (
+                                 <>
+                                     <Input placeholder="Certification Name" value={item.name} onChange={(e) => handleListItemChange(section.id, index, 'name', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                     <Input placeholder="Issuing Organization" value={item.issuer} onChange={(e) => handleListItemChange(section.id, index, 'issuer', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                 </>
+                             )}
+                             <Input placeholder="Dates (e.g., 2020 - 2024)" value={item.dates} onChange={(e) => handleListItemChange(section.id, index, 'dates', e.target.value)} className="text-sm text-muted-foreground border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                             {section.type !== 'certifications' && <Textarea placeholder="Description or key achievements..." value={item.description} onChange={(e) => handleListItemChange(section.id, index, 'description', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0" />}
+                         </div>
+                     ))}
+                     <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, itemType)}>
+                         <Plus className="h-4 w-4 mr-2" /> Add Entry
+                     </Button>
+                 </div>
+            </div>
+        );
        case 'skills':
-       case 'projects':
-       case 'certifications':
        case 'languages':
-       case 'publications':
        case 'achievements':
-       case 'cover_letter':
+       case 'publications':
         return (
           <div className="mt-6">
              <Input
-                value={section.title}
-                onChange={(e) => updateSectionTitle(section.id, e.target.value)}
+                value={content.title}
+                onChange={(e) => handleContentChange(section.id, 'title', e.target.value)}
                 className="text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent inline-block w-auto mb-2"
                 style={{ borderBottom: '2px solid var(--resume-primary)', fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}
             />
-            <Textarea placeholder={`Content for ${section.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
+            <Textarea value={content.text} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`e.g., Python, JavaScript, Public Speaking...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
           </div>
         );
        case 'subtitle':
             return (
                 <div className="mt-4">
                     <Input 
+                        value={content.text}
+                        onChange={(e) => handleContentChange(section.id, 'text', e.target.value)}
                         placeholder="Subtitle"
                         className="text-lg font-semibold p-0 border-0 h-auto focus-visible:ring-0 bg-transparent"
                     />
@@ -393,9 +561,9 @@ export default function BuilderPage() {
       default:
         return (
           <div className="mt-6">
-            <h2 className="text-xl font-bold mb-2 border-b-2 inline-block" style={{borderColor: 'var(--resume-primary)', fontFamily: 'var(--resume-font-headline, var(--font-headline))'}}>{section?.title}</h2>
+            <h2 className="text-xl font-bold mb-2 border-b-2 inline-block" style={{borderColor: 'var(--resume-primary)', fontFamily: 'var(--resume-font-headline, var(--font-headline))'}}>{content?.title}</h2>
              <div className="p-4 border rounded-md bg-muted/50 text-center text-muted-foreground">
-              This is a placeholder for the {section?.title} section.
+              This is a placeholder for the {content?.title} section.
             </div>
           </div>
         );
@@ -409,9 +577,13 @@ export default function BuilderPage() {
     '--resume-font-headline': styling.fontFamily,
     fontFamily: 'var(--resume-font-family)',
     backgroundColor: 'var(--resume-background)',
+  };
+
+  const resumeBgStyle = {
     backgroundImage: styling.backgroundImage ? `url(${styling.backgroundImage})` : 'none',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
+    filter: `blur(${styling.backgroundBlur}px) brightness(${styling.backgroundBrightness}%)`,
   };
 
   return (
@@ -442,10 +614,12 @@ export default function BuilderPage() {
                   <h3 className="mb-4 text-lg font-semibold">Select a Template</h3>
                   <div className="grid grid-cols-2 gap-4">
                     {templates.map(template => (
-                      <Card key={template.name} className="overflow-hidden cursor-pointer hover:border-primary">
-                        <img src={template.image} alt={template.name} className="w-full h-auto object-cover" />
-                        <p className="p-2 text-sm text-center font-medium">{template.name}</p>
+                      <button key={template.name} className="block text-left group">
+                      <Card className="overflow-hidden cursor-pointer group-hover:border-primary transition-all border-2 border-transparent group-focus:border-primary group-focus:ring-2 group-focus:ring-primary/50">
+                        <Image src={template.image} alt={template.name} width={150} height={212} className="w-full h-auto object-cover" />
+                        <p className="p-2 text-sm text-center font-medium bg-card">{template.name}</p>
                       </Card>
+                      </button>
                     ))}
                   </div>
                 </TabsContent>
@@ -485,6 +659,18 @@ export default function BuilderPage() {
                   <div>
                       <h3 className="mb-4 text-lg font-semibold">Background Image</h3>
                       <Input id="bgImage" type="file" accept="image/*" onChange={handleBackgroundImageUpload} className="text-sm" />
+                      {styling.backgroundImage && (
+                          <div className="mt-4 space-y-4">
+                              <div>
+                                  <Label htmlFor="bgBlur" className="text-sm">Blur</Label>
+                                  <Slider id="bgBlur" min={0} max={20} step={1} value={[styling.backgroundBlur]} onValueChange={(val) => handleStyleChange('backgroundBlur', val[0])} />
+                              </div>
+                              <div>
+                                  <Label htmlFor="bgBrightness" className="text-sm">Brightness</Label>
+                                  <Slider id="bgBrightness" min={20} max={100} step={5} value={[styling.backgroundBrightness]} onValueChange={(val) => handleStyleChange('backgroundBrightness', val[0])} />
+                              </div>
+                          </div>
+                      )}
                   </div>
                 </TabsContent>
               </ScrollArea>
@@ -538,9 +724,10 @@ export default function BuilderPage() {
               </div>
             </header>
             <ScrollArea className="flex-1 p-8" id="resume-canvas-container">
-              <div id="resume-canvas" className="w-full max-w-4xl mx-auto">
-                <Card className="w-full aspect-[8.5/11] shadow-lg transition-colors duration-300" id="resume-preview" style={resumeStyle}>
-                  <CardContent className="p-8 text-foreground">
+              <div className="w-full max-w-4xl mx-auto">
+                <Card className="w-full aspect-[8.5/11] shadow-lg transition-colors duration-300 relative overflow-hidden" id="resume-preview-wrapper" style={resumeStyle}>
+                    <div className="absolute inset-0 transition-all" style={resumeBgStyle}></div>
+                    <CardContent id="resume-preview" className="p-8 text-foreground relative h-full">
                     <SortableContext id="resume-canvas-droppable" items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
                       <div className="space-y-4">
                         {resumeData.sections.map((section) => (
