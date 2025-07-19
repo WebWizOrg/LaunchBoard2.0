@@ -1,0 +1,51 @@
+import Link from "next/link";
+import { Rocket, Twitter, Github, Linkedin } from "lucide-react";
+
+export function SiteFooter() {
+  return (
+    <footer className="w-full border-t bg-background">
+      <div className="container mx-auto px-4 md:px-6 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="flex flex-col items-start">
+            <Link href="/" className="flex items-center space-x-2 mb-4">
+              <Rocket className="h-6 w-6 text-primary" />
+              <span className="font-bold text-lg font-headline">LAUNCHBOARD</span>
+            </Link>
+            <p className="text-sm text-muted-foreground">Build. Share. Get Hired.</p>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-3">Product</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="#features" className="text-muted-foreground hover:text-foreground">Features</Link></li>
+              <li><Link href="#templates" className="text-muted-foreground hover:text-foreground">Templates</Link></li>
+              <li><Link href="/pricing" className="text-muted-foreground hover:text-foreground">Pricing</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-3">Company</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/about" className="text-muted-foreground hover:text-foreground">About Us</Link></li>
+              <li><Link href="/contact" className="text-muted-foreground hover:text-foreground">Contact</Link></li>
+              <li><Link href="/blog" className="text-muted-foreground hover:text-foreground">Blog</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-3">Legal</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link href="/privacy" className="text-muted-foreground hover:text-foreground">Privacy Policy</Link></li>
+              <li><Link href="/terms" className="text-muted-foreground hover:text-foreground">Terms of Service</Link></li>
+            </ul>
+          </div>
+        </div>
+        <div className="mt-8 border-t pt-6 flex flex-col md:flex-row items-center justify-between">
+          <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} LAUNCHBOARD. All rights reserved.</p>
+          <div className="flex space-x-4 mt-4 md:mt-0">
+            <Link href="#" aria-label="Twitter"><Twitter className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
+            <Link href="#" aria-label="GitHub"><Github className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
+            <Link href="#" aria-label="LinkedIn"><Linkedin className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
