@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Menu, Rocket, LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
@@ -27,7 +27,6 @@ export function SiteHeader() {
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
   const [lastResumeId, setLastResumeId] = useState<string | null>(null);
-  const [lastPortfolioId, setLastPortfolioId] = useState<string | null>(null);
   
   useEffect(() => {
     if (user && !loading) {
@@ -40,58 +39,16 @@ export function SiteHeader() {
         } else {
           setLastResumeId(null);
         }
-        
-        // Fetch last portfolio
-        const portfolioQuery = query(collection(db, `users/${user.uid}/portfolios`), orderBy("updatedAt", "desc"), limit(1));
-        const portfolioSnapshot = await getDocs(portfolioQuery);
-        if (!portfolioSnapshot.empty) {
-            setLastPortfolioId(portfolioSnapshot.docs[0].id);
-        } else {
-            setLastPortfolioId(null);
-        }
       };
       getMostRecentDocs();
     }
   }, [user, loading, pathname]); // Re-check when path changes to update active doc
 
   const resumeBuilderHref = lastResumeId ? `/builder?id=${lastResumeId}` : '/dashboard';
-  
-  // Custom navigation handler for portfolio builder
-  const handlePortfolioBuilderClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!user) {
-        router.push('/login');
-        return;
-    }
-
-    if (lastPortfolioId) {
-        router.push(`/portfolio/builder?id=${lastPortfolioId}`);
-    } else {
-        // Create a new portfolio and then navigate
-        try {
-            const collectionRef = collection(db, `users/${user.uid}/portfolios`);
-            const newDocRef = await addDoc(collectionRef, {
-                name: 'My First Portfolio',
-                isPublished: false,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                sections: [],
-                content: {},
-                styling: {}
-            });
-            router.push(`/portfolio/builder?id=${newDocRef.id}`);
-        } catch (error) {
-            console.error("Error creating new portfolio:", error);
-            // Fallback to dashboard if creation fails
-            router.push('/dashboard');
-        }
-    }
-  };
-
 
   const navLinks = [
     { name: "Resume Builder", href: resumeBuilderHref },
-    // { name: "Portfolio Builder", href: "/portfolio/builder", onClick: handlePortfolioBuilderClick },
+    // { name: "Portfolio Builder", href: "/portfolio/builder" },
     { name: "Marketplace", href: "/#marketplace" },
     { name: "Dashboard", href: "/dashboard" },
   ]
@@ -120,7 +77,6 @@ export function SiteHeader() {
               <Link
                 key={link.name}
                 href={link.href}
-                onClick={link.onClick}
                 className="transition-colors hover:text-foreground/80 text-foreground/60"
               >
                 {link.name}
@@ -153,7 +109,6 @@ export function SiteHeader() {
                               <Link
                                 key={link.name}
                                 href={link.href}
-                                onClick={link.onClick}
                                 className="text-muted-foreground transition-colors hover:text-foreground"
                               >
                                   {link.name}
