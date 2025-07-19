@@ -53,6 +53,7 @@ import {
   User,
   X,
   Image as ImageIcon,
+  Loader2,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -677,7 +678,7 @@ export default function BuilderPage() {
             
             return (
                 <div className="flex h-full">
-                    <div className="w-[30%] p-6 relative" style={{'--resume-accent-bg-text-color': 'var(--resume-background)', backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-background)'}}>
+                    <div className="w-[30%] p-6 relative" style={{'--resume-accent-bg-text-color': 'var(--resume-inverted-foreground)', backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-accent-bg-text-color)'}}>
                         {styling.accentPattern && (
                              <div className="absolute inset-0 bg-repeat bg-center opacity-10" style={{backgroundImage: `url(${styling.accentPattern})`}}></div>
                         )}
@@ -722,6 +723,7 @@ export default function BuilderPage() {
     '--resume-accent-color': styling.accentColor,
     '--resume-background': theme === 'dark' ? styling.backgroundColorDark : styling.backgroundColorLight,
     '--resume-foreground': theme === 'dark' ? '#f8f8f8' : '#111111',
+    '--resume-inverted-foreground': theme === 'dark' ? '#111111' : '#f8f8f8',
     '--resume-font-family': styling.fontFamily,
     '--resume-font-headline': styling.fontFamily,
     fontFamily: 'var(--resume-font-family)',
