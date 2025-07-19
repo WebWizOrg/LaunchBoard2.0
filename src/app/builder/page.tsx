@@ -514,13 +514,16 @@ export default function BuilderPage() {
         const content = resumeData.content[section.id] || {};
         const { isAccentBg } = templateContext;
 
-        const TitleInput = ({value, onChange, ...props}) => (
-             <Input 
-                value={value} 
-                onChange={(e) => onChange(e.target.value)} 
-                className="text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent inline-block w-auto mb-2" 
-                style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', ...props.style }}
-             />
+        const TitleInput = ({value, onChange, icon: Icon, ...props}) => (
+            <div className="flex items-center gap-3 mb-2">
+                {Icon && <Icon className="h-6 w-6" style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }} />}
+                 <Input 
+                    value={value} 
+                    onChange={(e) => onChange(e.target.value)} 
+                    className="text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full" 
+                    style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)', ...props.style }}
+                 />
+            </div>
         );
 
         switch (section.type) {
@@ -568,18 +571,18 @@ export default function BuilderPage() {
             case 'contact':
               return (
                 <div className="mt-6">
-                  <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }} />
+                  <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={Phone} />
                   <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground"/>
-                        <Input placeholder="Phone Number" value={content.phone} onChange={(e) => handleContentChange(section.id, 'phone', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground"/>
+                        <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
                         <Input placeholder="Email Address" value={content.email} onChange={(e) => handleContentChange(section.id, 'email', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                       </div>
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground"/>
+                        <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
+                        <Input placeholder="Phone Number" value={content.phone} onChange={(e) => handleContentChange(section.id, 'phone', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
                         <Input placeholder="Your Address" value={content.address} onChange={(e) => handleContentChange(section.id, 'address', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                       </div>
                   </div>
@@ -589,20 +592,44 @@ export default function BuilderPage() {
           case 'cover_letter':
               return (
                   <div className="mt-6">
-                      <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }}/>
+                      <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={section.type === 'summary' ? FileText : Bot} />
                       <Textarea value={content.text} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
                   </div>
               );
           case 'recommendations':
+            return (
+                <div className="mt-6">
+                     <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={Quote}/>
+                     <div className="space-y-4">
+                         {(content.items || []).map((item, index) => (
+                             <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
+                                 <button onClick={() => removeListItem(section.id, index)} className="absolute top-0 -right-2 h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>
+                                 <Textarea placeholder="Recommendation text..." value={item.text} onChange={(e) => handleListItemChange(section.id, index, 'text', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0 italic" />
+                                 <Input placeholder="Author Name, Title @ Company" value={item.author} onChange={(e) => handleListItemChange(section.id, index, 'author', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-right font-semibold" />
+                             </div>
+                         ))}
+                         <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, 'recommendations')}>
+                             <Plus className="h-4 w-4 mr-2" /> Add Recommendation
+                         </Button>
+                     </div>
+                </div>
+            );
           case 'experience':
           case 'projects':
           case 'education':
           case 'certifications':
           case 'links':
-            const itemType = section.type === 'links' ? 'links' : section.type.slice(0, -1);
+            const itemTypeMap = {
+                experience: {icon: Briefcase, type: 'experience'},
+                projects: {icon: Code, type: 'projects'},
+                education: {icon: GraduationCap, type: 'education'},
+                certifications: {icon: Award, type: 'certifications'},
+                links: {icon: LinkIcon, type: 'links'}
+            };
+            const itemConfig = itemTypeMap[section.type];
             return (
                 <div className="mt-6">
-                     <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }}/>
+                     <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={itemConfig.icon}/>
                      <div className="space-y-4">
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
@@ -637,17 +664,11 @@ export default function BuilderPage() {
                                         <Input placeholder="URL" value={item.url} onChange={(e) => handleListItemChange(section.id, index, 'url', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                      </div>
                                  )}
-                                  {section.type === 'recommendations' && (
-                                     <>
-                                         <Textarea placeholder="Recommendation text..." value={item.text} onChange={(e) => handleListItemChange(section.id, index, 'text', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0 italic" />
-                                         <Input placeholder="Author Name, Title @ Company" value={item.author} onChange={(e) => handleListItemChange(section.id, index, 'author', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-right font-semibold" />
-                                     </>
-                                 )}
                                  <Input placeholder="Dates (e.g., 2020 - 2024)" value={item.dates} onChange={(e) => handleListItemChange(section.id, index, 'dates', e.target.value)} className="text-sm text-muted-foreground border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                  {['experience', 'projects', 'education'].includes(section.type) && <Textarea placeholder="Description or key achievements..." value={item.description} onChange={(e) => handleListItemChange(section.id, index, 'description', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0" />}
                              </div>
                          ))}
-                         <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, itemType)}>
+                         <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, itemConfig.type)}>
                              <Plus className="h-4 w-4 mr-2" /> Add Entry
                          </Button>
                      </div>
@@ -657,12 +678,18 @@ export default function BuilderPage() {
            case 'languages':
            case 'achievements':
            case 'publications':
+            const textIconMap = {
+                skills: Sparkles,
+                languages: Languages,
+                achievements: Star,
+                publications: Book,
+            };
             return (
               <div className="mt-6">
                  <TitleInput 
                     value={content.title} 
                     onChange={(val) => handleContentChange(section.id, 'title', val)}
-                    style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }}
+                    icon={textIconMap[section.type]}
                 />
                 <Textarea value={content.text} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`e.g., Python, JavaScript, Public Speaking...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
               </div>
@@ -705,16 +732,16 @@ export default function BuilderPage() {
 
             return (
                 <div className='flex flex-col h-full'>
-                    <div className="h-[15%] p-6 flex flex-col items-center justify-center text-center gap-4" style={{ backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-accent-text-color)' }}>
+                    <div className="h-[15%] p-6 flex flex-row items-center justify-center gap-6" style={{ backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-accent-text-color)' }}>
                          {headerContent.showAvatar && (
-                            <div className="relative group w-32 h-32 flex-shrink-0">
+                            <div className="relative group w-36 h-36 flex-shrink-0">
                                 <Image
-                                    src={headerContent.avatar || 'https://placehold.co/128x128.png'}
+                                    src={headerContent.avatar || 'https://placehold.co/144x144.png'}
                                     alt="Avatar"
-                                    width={128}
-                                    height={128}
+                                    width={144}
+                                    height={144}
                                     data-ai-hint="placeholder"
-                                    className="rounded-full object-cover w-32 h-32 border-4 border-current"
+                                    className="rounded-full object-cover w-36 h-36 border-4 border-current"
                                 />
                                 <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                                     <ImageIcon className="h-8 w-8" />
@@ -726,13 +753,13 @@ export default function BuilderPage() {
                              <Input
                                 value={headerContent.name}
                                 onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)}
-                                className="text-5xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent text-center"
+                                className="text-5xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent text-left"
                                 style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: 'var(--resume-accent-text-color)' }}
                             />
                             <Input
                                 value={headerContent.tagline}
                                 onChange={(e) => handleContentChange(headerSection.id, 'tagline', e.target.value)}
-                                className="text-xl p-0 border-0 h-auto focus-visible:ring-0 bg-transparent opacity-80 text-center mt-2"
+                                className="text-2xl p-0 border-0 h-auto focus-visible:ring-0 bg-transparent opacity-80 text-left mt-2"
                                 style={{color: 'var(--resume-accent-text-color)'}}
                             />
                         </div>
@@ -1056,3 +1083,4 @@ export default function BuilderPage() {
     </ClientOnly>
   );
 }
+
