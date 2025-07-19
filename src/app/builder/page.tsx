@@ -1,5 +1,4 @@
 
-
 // src/app/builder/page.tsx
 'use client';
 
@@ -139,6 +138,7 @@ const templates = [
   { name: 'Minimalist', id: 'minimalist', image: 'https://placehold.co/150x212.png', hint: 'minimalist resume' },
   { name: 'Horizontal Split', id: 'horizontal-split', image: 'https://placehold.co/150x212.png', hint: 'resume template' },
   { name: 'Vertical Split', id: 'vertical-split', image: 'https://placehold.co/150x212.png', hint: 'modern resume' },
+  { name: 'Classic', id: 'classic', image: 'https://placehold.co/150x212.png', hint: 'classic resume' },
   { name: 'Creative', id: 'creative', image: 'https://placehold.co/150x212.png', hint: 'creative resume' },
 ];
 
@@ -152,6 +152,7 @@ const fonts = [
   { name: 'Open Sans', family: 'var(--font-open-sans)' },
   { name: 'Merriweather', family: 'var(--font-merriweather)' },
   { name: 'Playfair Display', family: 'var(--font-playfair-display)' },
+  { name: 'Arial', family: 'Arial, sans-serif' },
 ];
 
 const lightBgColors = [
@@ -272,7 +273,7 @@ export default function BuilderPage() {
 
   const [styling, setStyling] = useState({
       template: 'minimalist',
-      accentColor: '#FFB700',
+      accentColor: '#4842B3',
       accentTextColor: '#ffffff',
       backgroundColorLight: '#ffffff',
       backgroundColorDark: '#1a202c',
@@ -720,6 +721,56 @@ export default function BuilderPage() {
     };
 
     const renderTemplate = () => {
+
+        if (styling.template === 'classic') {
+          const headerSection = resumeData.sections.find(s => s.type === 'header');
+          const headerContent = headerSection ? resumeData.content[headerSection.id] : {};
+          const contactSection = resumeData.sections.find(s => s.type === 'contact');
+          const contactContent = contactSection ? resumeData.content[contactSection.id] : {};
+
+          return (
+            <div className="p-10 space-y-6">
+              {/* Header */}
+              <header className="text-center space-y-2">
+                <Input
+                  value={headerContent.name}
+                  onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)}
+                  className="text-4xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent"
+                  style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: 'var(--resume-accent-color)' }}
+                />
+                <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Mail className="h-4 w-4"/>
+                    <Input placeholder="Email Address" value={contactContent.email} onChange={(e) => handleContentChange(contactSection.id, 'email', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Phone className="h-4 w-4"/>
+                    <Input placeholder="Phone Number" value={contactContent.phone} onChange={(e) => handleContentChange(contactSection.id, 'phone', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                  </div>
+                   <div className="flex items-center gap-1">
+                    <Github className="h-4 w-4"/>
+                    <Input placeholder="github.com/your-profile" value={contactContent.github} onChange={(e) => handleContentChange(contactSection.id, 'github', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                  </div>
+                   <div className="flex items-center gap-1">
+                    <Linkedin className="h-4 w-4"/>
+                    <Input placeholder="linkedin.com/in/your-profile" value={contactContent.linkedin} onChange={(e) => handleContentChange(contactSection.id, 'linkedin', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                  </div>
+                </div>
+              </header>
+
+              <Separator className="bg-border/30" />
+
+              <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                  {resumeData.sections.filter(s => s.type !== 'header' && s.type !== 'contact').map((section) => (
+                     <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
+                      {renderSectionComponent(section)}
+                    </SortableResumeSection>
+                  ))}
+                </SortableContext>
+            </div>
+          );
+        }
+        
         if (styling.template === 'vertical-split') {
             const headerSection = resumeData.sections.find(s => s.type === 'header');
             const headerContent = headerSection ? resumeData.content[headerSection.id] : {};
@@ -1083,4 +1134,3 @@ export default function BuilderPage() {
     </ClientOnly>
   );
 }
-
