@@ -1,7 +1,7 @@
 // src/app/portfolio/builder/page.tsx
 'use client';
 
-import React, { useState, useTransition, useEffect, useCallback } from 'react';
+import React, { useState, useTransition, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -62,7 +62,8 @@ import {
   Globe,
   Newspaper,
   Heart,
-  MessageSquare
+  MessageSquare,
+  ArrowRight
 } from 'lucide-react';
 import { doc, getDoc, setDoc, onSnapshot, DocumentData, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -90,20 +91,20 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 
-// Wrapper to prevent hydration errors with dnd-kit
+// Wrapper to prevent hydration errors
 function ClientOnly({ children }: { children: React.ReactNode }) {
-  const [hasMounted, setHasMounted] = useState(false);
-
+  const [isClient, setIsClient] = useState(false);
   useEffect(() => {
-    setHasMounted(true);
+    setIsClient(true);
   }, []);
 
-  if (!hasMounted) {
+  if (!isClient) {
     return null;
   }
-
+  
   return <>{children}</>;
 }
+
 
 const initialSections = [
     { id: 'header', icon: <User />, name: 'Header' },
@@ -222,6 +223,8 @@ export default function PortfolioBuilderPage() {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   
   const [portfolioData, setPortfolioData] = useState<DocumentData | null>(null);
+
+  // Hooks are now called unconditionally
   const sensors = useSensors(useSensor(PointerSensor));
 
   const debouncedSave = useCallback(
@@ -272,6 +275,7 @@ export default function PortfolioBuilderPage() {
     return () => unsubscribe();
   }, [user, portfolioId, router]);
 
+  // Conditional rendering check is now after all hooks
   if (!isDataLoaded || !portfolioData) {
     return (
       <div className="flex items-center justify-center h-screen bg-muted">
@@ -484,108 +488,108 @@ export default function PortfolioBuilderPage() {
 
   return (
     <ClientOnly>
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <TooltipProvider>
-        <div className="flex h-screen bg-muted/40">
-          {/* Sidebar */}
-          <aside className="w-80 border-r bg-background flex flex-col">
-            <Tabs defaultValue="content" className="flex flex-col h-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="content">Content</TabsTrigger>
-                <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
-                <TabsTrigger value="design">Design</TabsTrigger>
-              </TabsList>
-              <ScrollArea className="flex-1">
-                <TabsContent value="content" className="p-4">
-                  <h3 className="mb-4 text-lg font-semibold">Sections</h3>
-                   <SortableContext items={initialSections.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-2">
-                      {initialSections.map((block) => <DraggableSection key={block.id} {...block} />)}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <TooltipProvider>
+          <div className="flex h-screen bg-muted/40">
+            {/* Sidebar */}
+            <aside className="w-80 border-r bg-background flex flex-col">
+              <Tabs defaultValue="content" className="flex flex-col h-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="content">Content</TabsTrigger>
+                  <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+                  <TabsTrigger value="design">Design</TabsTrigger>
+                </TabsList>
+                <ScrollArea className="flex-1">
+                  <TabsContent value="content" className="p-4">
+                    <h3 className="mb-4 text-lg font-semibold">Sections</h3>
+                    <SortableContext items={initialSections.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-2">
+                        {initialSections.map((block) => <DraggableSection key={block.id} {...block} />)}
+                      </div>
+                    </SortableContext>
+                  </TabsContent>
+                  <TabsContent value="marketplace" className="p-4">
+                    <h3 className="mb-4 text-lg font-semibold">Templates</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      {templates.map(template => (
+                        <Card key={template.id} onClick={() => handleStyleChange('template', template.id)} className={cn("overflow-hidden cursor-pointer", styling.template === template.id && "ring-2 ring-primary")}>
+                          <Image src={template.image} alt={template.name} width={200} height={150} className="w-full h-auto object-cover" data-ai-hint={template.hint} />
+                          <p className="p-2 text-sm text-center font-medium bg-card">{template.name}</p>
+                        </Card>
+                      ))}
                     </div>
-                  </SortableContext>
-                </TabsContent>
-                <TabsContent value="marketplace" className="p-4">
-                  <h3 className="mb-4 text-lg font-semibold">Templates</h3>
-                  <div className="grid grid-cols-1 gap-4">
-                    {templates.map(template => (
-                      <Card key={template.id} onClick={() => handleStyleChange('template', template.id)} className={cn("overflow-hidden cursor-pointer", styling.template === template.id && "ring-2 ring-primary")}>
-                        <Image src={template.image} alt={template.name} width={200} height={150} className="w-full h-auto object-cover" data-ai-hint={template.hint} />
-                        <p className="p-2 text-sm text-center font-medium bg-card">{template.name}</p>
-                      </Card>
-                    ))}
+                  </TabsContent>
+                  <TabsContent value="design" className="p-4 space-y-6">
+                      <div>
+                          <h3 className="mb-4 text-lg font-semibold">Colors</h3>
+                          <div className="space-y-4">
+                              <div className="flex items-center justify-between"><Label>Primary</Label><Input type="color" value={styling.primaryColor} onChange={(e) => handleStyleChange('primaryColor', e.target.value)} className="w-24 p-1 h-8" /></div>
+                              <div className="flex items-center justify-between"><Label>Background</Label><Input type="color" value={styling.backgroundColor} onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} className="w-24 p-1 h-8" /></div>
+                              <div className="flex items-center justify-between"><Label>Text</Label><Input type="color" value={styling.textColor} onChange={(e) => handleStyleChange('textColor', e.target.value)} className="w-24 p-1 h-8" /></div>
+                          </div>
+                      </div>
+                  </TabsContent>
+                </ScrollArea>
+              </Tabs>
+            </aside>
+
+            {/* Main Canvas */}
+            <main className="flex-1 flex flex-col">
+              <header className="flex items-center justify-between p-2 border-b bg-background">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Input value={portfolioData.name} onChange={(e) => handleNameChange(e.target.value)} className="text-sm font-semibold h-8 border-0 focus-visible:ring-1 bg-transparent" />
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-24">
+                    {saveStatus === 'Saving...' && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {saveStatus === 'Saved' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                    {saveStatus === 'Error' && <AlertCircle className="h-4 w-4 text-destructive" />}
+                    <span>{saveStatus}</span>
                   </div>
-                </TabsContent>
-                <TabsContent value="design" className="p-4 space-y-6">
-                    <div>
-                        <h3 className="mb-4 text-lg font-semibold">Colors</h3>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between"><Label>Primary</Label><Input type="color" value={styling.primaryColor} onChange={(e) => handleStyleChange('primaryColor', e.target.value)} className="w-24 p-1 h-8" /></div>
-                            <div className="flex items-center justify-between"><Label>Background</Label><Input type="color" value={styling.backgroundColor} onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} className="w-24 p-1 h-8" /></div>
-                            <div className="flex items-center justify-between"><Label>Text</Label><Input type="color" value={styling.textColor} onChange={(e) => handleStyleChange('textColor', e.target.value)} className="w-24 p-1 h-8" /></div>
-                        </div>
-                    </div>
-                </TabsContent>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Tooltip><TooltipTrigger asChild><Button variant={isPreviewing ? "secondary" : "ghost"} size="icon" onClick={() => setIsPreviewing(!isPreviewing)}> <Eye className="h-5 w-5" /> </Button></TooltipTrigger><TooltipContent><p>{isPreviewing ? "Exit Preview" : "Preview"}</p></TooltipContent></Tooltip>
+                  
+                  <Dialog>
+                    <DialogTrigger asChild><Button size="sm"><Share2 className="mr-2 h-4 w-4" />Share</Button></DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader><DialogTitle>Share Your Portfolio</DialogTitle><DialogDescription>Anyone with this link will be able to view your portfolio. Make sure to publish it first.</DialogDescription></DialogHeader>
+                      <div className="grid gap-4 py-4">
+                          <div className="flex items-center space-x-2"><Switch id="publish-switch" checked={portfolioData.isPublished} onCheckedChange={handlePublishChange} /><Label htmlFor="publish-switch">{portfolioData.isPublished ? 'Published' : 'Unpublished'}</Label></div>
+                          <Label htmlFor="share-link">Shareable Link</Label>
+                          <div className="flex gap-2"><Input id="share-link" defaultValue={`${window.location.origin}/portfolio/share/${portfolioId}`} readOnly /><Button onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/portfolio/share/${portfolioId}`); toast({ title: "Copied to clipboard!" });}}><Copy className="h-4 w-4"/></Button></div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </header>
+              <ScrollArea className="flex-1 bg-muted">
+                  <div className={cn("mx-auto transition-all", isPreviewing ? 'w-full' : 'w-[90%] max-w-7xl py-8')}>
+                      <div className={cn("shadow-lg overflow-hidden", isPreviewing ? 'h-full' : 'rounded-lg border')} style={portfolioStyle}>
+                        <DroppableCanvas>
+                            <SortableContext items={portfolioSectionsIds} strategy={verticalListSortingStrategy} disabled={isPreviewing}>
+                              {portfolioData.sections.length > 0 ? portfolioData.sections.map((section) => (
+                                  <SortableSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
+                                      {renderSectionComponent(section)}
+                                  </SortableSection>
+                              )) : (
+                                  <div className="flex items-center justify-center h-96 text-muted-foreground">
+                                      <p>Drag sections from the left panel to start building your portfolio.</p>
+                                  </div>
+                              )}
+                            </SortableContext>
+                        </DroppableCanvas>
+                      </div>
+                  </div>
               </ScrollArea>
-            </Tabs>
-          </aside>
+            </main>
+            <DragOverlay>
+              {activeId && allSectionsMap.has(activeId) ? (
+                <Card className='flex items-center p-2 cursor-grabbing opacity-80'><GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />{React.cloneElement(allSectionsMap.get(activeId).icon, { className: 'h-5 w-5 mr-3 text-primary' })}<span className="text-sm font-medium">{allSectionsMap.get(activeId).name}</span></Card>
+              ) : null}
+            </DragOverlay>
 
-          {/* Main Canvas */}
-          <main className="flex-1 flex flex-col">
-            <header className="flex items-center justify-between p-2 border-b bg-background">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Input value={portfolioData.name} onChange={(e) => handleNameChange(e.target.value)} className="text-sm font-semibold h-8 border-0 focus-visible:ring-1 bg-transparent" />
-                <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-24">
-                  {saveStatus === 'Saving...' && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {saveStatus === 'Saved' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                  {saveStatus === 'Error' && <AlertCircle className="h-4 w-4 text-destructive" />}
-                  <span>{saveStatus}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                 <Tooltip><TooltipTrigger asChild><Button variant={isPreviewing ? "secondary" : "ghost"} size="icon" onClick={() => setIsPreviewing(!isPreviewing)}> <Eye className="h-5 w-5" /> </Button></TooltipTrigger><TooltipContent><p>{isPreviewing ? "Exit Preview" : "Preview"}</p></TooltipContent></Tooltip>
-                
-                <Dialog>
-                  <DialogTrigger asChild><Button size="sm"><Share2 className="mr-2 h-4 w-4" />Share</Button></DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader><DialogTitle>Share Your Portfolio</DialogTitle><DialogDescription>Anyone with this link will be able to view your portfolio. Make sure to publish it first.</DialogDescription></DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="flex items-center space-x-2"><Switch id="publish-switch" checked={portfolioData.isPublished} onCheckedChange={handlePublishChange} /><Label htmlFor="publish-switch">{portfolioData.isPublished ? 'Published' : 'Unpublished'}</Label></div>
-                        <Label htmlFor="share-link">Shareable Link</Label>
-                        <div className="flex gap-2"><Input id="share-link" defaultValue={`${window.location.origin}/portfolio/share/${portfolioId}`} readOnly /><Button onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/portfolio/share/${portfolioId}`); toast({ title: "Copied to clipboard!" });}}><Copy className="h-4 w-4"/></Button></div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </header>
-            <ScrollArea className="flex-1 bg-muted">
-                <div className={cn("mx-auto transition-all", isPreviewing ? 'w-full' : 'w-[90%] max-w-7xl py-8')}>
-                    <div className={cn("shadow-lg overflow-hidden", isPreviewing ? 'h-full' : 'rounded-lg border')} style={portfolioStyle}>
-                      <DroppableCanvas>
-                          <SortableContext items={portfolioSectionsIds} strategy={verticalListSortingStrategy} disabled={isPreviewing}>
-                            {portfolioData.sections.length > 0 ? portfolioData.sections.map((section) => (
-                                <SortableSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                    {renderSectionComponent(section)}
-                                </SortableSection>
-                            )) : (
-                                <div className="flex items-center justify-center h-96 text-muted-foreground">
-                                    <p>Drag sections from the left panel to start building your portfolio.</p>
-                                </div>
-                            )}
-                          </SortableContext>
-                      </DroppableCanvas>
-                    </div>
-                </div>
-            </ScrollArea>
-          </main>
-          <DragOverlay>
-            {activeId && allSectionsMap.has(activeId) ? (
-              <Card className='flex items-center p-2 cursor-grabbing opacity-80'><GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />{React.cloneElement(allSectionsMap.get(activeId).icon, { className: 'h-5 w-5 mr-3 text-primary' })}<span className="text-sm font-medium">{allSectionsMap.get(activeId).name}</span></Card>
-            ) : null}
-          </DragOverlay>
-
-        </div>
-      </TooltipProvider>
-    </DndContext>
+          </div>
+        </TooltipProvider>
+      </DndContext>
     </ClientOnly>
   );
 }
