@@ -186,12 +186,13 @@ function SortableResumeSection({ id, children, onRemove }) {
   );
 }
 
-const createNewItem = (type) => {
-    const common = { id: `${type}_${Date.now()}` };
-    switch (type) {
+const createNewItem = (itemType) => {
+    const common = { id: `${itemType}_item_${Date.now()}` };
+    switch (itemType) {
         case 'experience':
+            return { ...common, company: '', role: '', dates: '', description: '• ' };
         case 'projects':
-            return { ...common, company: '', role: '', dates: '', description: '' };
+            return { ...common, name: '', tech: '', dates: '', description: '• ' };
         case 'education':
             return { ...common, institution: '', degree: '', dates: '', description: '' };
         case 'certifications':
@@ -228,7 +229,7 @@ export default function BuilderPage() {
   const [styling, setStyling] = useState({
       primaryColor: '#1d4ed8',
       backgroundColorLight: '#ffffff',
-      backgroundColorDark: '#1f2937', // Lighter than before
+      backgroundColorDark: '#1f2937',
       fontFamily: 'var(--font-inter)',
       backgroundImage: '',
       backgroundBlur: 0,
@@ -347,35 +348,41 @@ export default function BuilderPage() {
   const handleDragEnd = (event) => {
     const { active, over } = event;
     setActiveId(null);
+
     if (!over) return;
-  
+
     const isSidebarItem = allSectionsMap.has(active.id);
     const isCanvasItem = resumeSectionsIds.includes(active.id);
-  
-    if (isSidebarItem && over.id === 'resume-canvas-droppable') {
-        const newSectionType = active.id;
-        const newSectionId = `${newSectionType}_${Date.now()}`;
-        const newSectionData = { id: newSectionId, type: newSectionType };
-        const defaultContent = { title: allSectionsMap.get(newSectionType)?.name || 'New Section' };
-        
-        if (['experience', 'education', 'projects', 'certifications'].includes(newSectionType)) {
-            defaultContent.items = [];
-        } else if (newSectionType === 'header') { // This shouldn't happen, but as a fallback
-            defaultContent.name = 'Your Name';
-            defaultContent.tagline = 'Your Role';
-            defaultContent.avatar = '';
-        }
+    const isDroppingOnCanvas = over.id === 'resume-canvas-droppable';
 
-        setResumeData(prev => ({
-            sections: [...prev.sections, newSectionData],
-            content: { ...prev.content, [newSectionId]: defaultContent }
-        }));
+    if (isSidebarItem && isDroppingOnCanvas) {
+      const newSectionType = active.id;
+      const newSectionId = `${newSectionType}_${Date.now()}`;
+      const newSectionData = { id: newSectionId, type: newSectionType };
+      
+      let defaultContent = { title: allSectionsMap.get(newSectionType)?.name || 'New Section' };
+      if (newSectionType === 'line_break' || newSectionType === 'subtitle') {
+          defaultContent = { text: '' };
+      }
+      
+      if (['experience', 'education', 'projects', 'certifications'].includes(newSectionType)) {
+          defaultContent.items = [];
+      } else if (newSectionType === 'header') { // This shouldn't happen, but as a fallback
+          defaultContent.name = 'Your Name';
+          defaultContent.tagline = 'Your Role';
+          defaultContent.avatar = '';
+      }
+
+      setResumeData(prev => ({
+          sections: [...prev.sections, newSectionData],
+          content: { ...prev.content, [newSectionId]: defaultContent }
+      }));
     } else if (isCanvasItem && resumeSectionsIds.includes(over.id)) {
       // Reordering an existing item on the canvas
-      const activeIndex = resumeData.sections.findIndex(s => s.id === active.id);
-      const overIndex = resumeData.sections.findIndex(s => s.id === over.id);
-  
-      if (activeIndex !== overIndex) {
+      if (active.id !== over.id) {
+        const activeIndex = resumeData.sections.findIndex(s => s.id === active.id);
+        const overIndex = resumeData.sections.findIndex(s => s.id === over.id);
+    
         setResumeData((prev) => ({
           ...prev,
           sections: arrayMove(prev.sections, activeIndex, overIndex),
@@ -488,7 +495,7 @@ export default function BuilderPage() {
       case 'projects':
       case 'education':
       case 'certifications':
-        const itemType = section.type.slice(0, -1); // 'experience' -> 'experienc'
+        const itemType = section.type.slice(0, -1);
         return (
             <div className="mt-6">
                  <Input value={content.title} onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} className="text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent inline-block w-auto mb-2" style={{ borderBottom: '2px solid var(--resume-primary)', fontFamily: 'var(--resume-font-headline, var(--font-headline))' }} />
@@ -510,8 +517,8 @@ export default function BuilderPage() {
                              )}
                              {section.type === 'projects' && (
                                   <>
-                                     <Input placeholder="Project Name" value={item.company} onChange={(e) => handleListItemChange(section.id, index, 'company', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                                     <Input placeholder="Tech Stack" value={item.role} onChange={(e) => handleListItemChange(section.id, index, 'role', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-sm text-muted-foreground" />
+                                     <Input placeholder="Project Name" value={item.name} onChange={(e) => handleListItemChange(section.id, index, 'name', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                     <Input placeholder="Tech Stack" value={item.tech} onChange={(e) => handleListItemChange(section.id, index, 'tech', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-sm text-muted-foreground" />
                                  </>
                              )}
                               {section.type === 'certifications' && (
