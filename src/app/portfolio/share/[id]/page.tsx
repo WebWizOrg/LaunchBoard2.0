@@ -13,7 +13,7 @@ export default function SharePortfolioPage({ params }: { params: { id: string } 
       <div className="w-full">
         <ReadOnlyPortfolio portfolioId={params.id} />
       </div>
-       <div className="mt-4">
+       <div className="mt-4 mb-4">
           <Button asChild variant="ghost" className="text-muted-foreground hover:text-foreground">
              <Link href="/">
                 <p className="text-xs">Generated with</p>

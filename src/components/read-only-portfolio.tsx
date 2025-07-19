@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 import { doc, getDoc, DocumentData, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2, Mail, Linkedin, ArrowRight } from 'lucide-react';
+import { Loader2, Mail, Linkedin, ArrowRight, User, FileText, Code, Briefcase, Newspaper, Sparkles, Quote, Phone, ImageIcon, Heart, MessageSquare, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { defaultPortfolioData } from '@/app/portfolio/builder/page';
 import { Separator } from '@/components/ui/separator';
@@ -51,38 +51,16 @@ export function ReadOnlyPortfolio({ portfolioId }: { portfolioId: string }) {
     fetchPortfolio();
   }, [portfolioId]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-muted">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!portfolioData) {
-    return notFound();
-  }
-  
-  const styling = portfolioData.styling || {};
-  const portfolioStyle = {
-    '--portfolio-primary-color': styling.primaryColor,
-    '--portfolio-background-color': styling.backgroundColor,
-    '--portfolio-text-color': styling.textColor,
-    fontFamily: styling.fontFamily,
-    backgroundColor: 'var(--portfolio-background-color)',
-    color: 'var(--portfolio-text-color)',
-  };
-
-  const renderSectionComponent = (section: any) => {
+    const renderSectionComponent = (section: any) => {
     const content = portfolioData.content[section.id] || {};
 
-    const SectionWrapper = ({children, id}: {children: React.ReactNode, id: string}) => <section id={id} className="w-full px-8 py-12 md:px-16 md:py-20">{children}</section>;
+    const SectionWrapper = ({children, id, className}: {children: React.ReactNode, id: string, className?: string}) => <section id={id} className={cn("w-full px-8 py-12 md:px-16 md:py-20", className)}>{children}</section>;
     const Title = ({children}: {children: React.ReactNode}) => <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-8 text-center">{children}</h2>;
 
     switch (section.type) {
         case 'header': return (
             <header className="w-full h-[60vh] flex items-center justify-center text-center px-8" style={{ background: 'linear-gradient(to right, #0f2027, #203a43, #2c5364)' }}>
-                <div className="space-y-4">
+                <div className="space-y-4 text-white">
                     <h1 className="text-5xl font-extrabold tracking-tighter sm:text-6xl md:text-7xl">{content.title}</h1>
                     <p className="max-w-[700px] mx-auto text-lg md:text-xl">{content.tagline}</p>
                     <div className="flex gap-4 justify-center">
@@ -113,6 +91,7 @@ export function ReadOnlyPortfolio({ portfolioId }: { portfolioId: string }) {
                                     <Image src={item.image || "https://placehold.co/600x400.png"} width={600} height={400} alt={item.title} className="rounded-md mb-4" data-ai-hint={item.hint || 'project screenshot'}/>
                                     <h3 className="text-xl font-bold">{item.title}</h3>
                                     <p className="text-muted-foreground mt-2">{item.description}</p>
+                                    <p className="text-sm text-muted-foreground mt-2">{item.tech}</p>
                                     <Button asChild variant="link" className="mt-4 p-0"><a href={item.link}>View Project <ArrowRight className="ml-2 h-4 w-4" /></a></Button>
                                 </CardContent>
                             </Card>
@@ -148,13 +127,78 @@ export function ReadOnlyPortfolio({ portfolioId }: { portfolioId: string }) {
     }
   };
 
+  const renderTemplate = () => {
+    const styling = portfolioData?.styling || defaultPortfolioData.styling;
+
+    if (styling.template === 'split-showcase') {
+        const sidebarSections = ['about', 'skills', 'contact'];
+        const mainSections = ['header', 'projects', 'experience', 'testimonials'];
+        
+        const sidebarContent = portfolioData.sections.filter(s => sidebarSections.includes(s.type));
+        const mainContent = portfolioData.sections.filter(s => mainSections.includes(s.type));
+
+        return (
+            <div className='flex flex-col md:flex-row min-h-screen'>
+                <aside className="w-full md:w-1/3 md:h-screen md:sticky top-0 p-8 md:p-12 flex flex-col gap-8 border-r">
+                    {sidebarContent.map((section: any) => (
+                        <div key={section.id}>{renderSectionComponent(section)}</div>
+                    ))}
+                </aside>
+                <main className='w-full md:w-2/3'>
+                    {mainContent.map((section: any) => (
+                        <div key={section.id}>{renderSectionComponent(section)}</div>
+                    ))}
+                </main>
+            </div>
+        );
+    }
+    
+    if (styling.template === 'terminal') {
+        return (
+            <div className="font-mono bg-black text-green-400 min-h-screen p-4 md:p-8">
+                {portfolioData.sections.map((section: any) => (
+                    <div key={section.id}>{renderSectionComponent(section)}</div>
+                ))}
+            </div>
+        );
+    }
+
+    // Default template (modern-dark)
+    return (
+        <div className="bg-[#111827] text-white">
+            {portfolioData.sections.map((section: any) => (
+                <div key={section.id}>{renderSectionComponent(section)}</div>
+            ))}
+        </div>
+    );
+  };
+
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-muted">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!portfolioData) {
+    return notFound();
+  }
+  
+  const styling = portfolioData.styling || {};
+  const portfolioStyle = {
+    '--portfolio-primary-color': styling.primaryColor,
+    '--portfolio-background-color': styling.backgroundColor,
+    '--portfolio-text-color': styling.textColor,
+    fontFamily: styling.fontFamily,
+    backgroundColor: 'var(--portfolio-background-color)',
+    color: 'var(--portfolio-text-color)',
+  };
+
   return (
     <div className="w-full" style={portfolioStyle}>
-      {portfolioData.sections.map((section: any) => (
-          <div key={section.id}>
-              {renderSectionComponent(section)}
-          </div>
-      ))}
+        {renderTemplate()}
     </div>
   );
 }

@@ -64,7 +64,9 @@ import {
   Newspaper,
   Heart,
   MessageSquare,
-  ArrowRight
+  ArrowRight,
+  Monitor,
+  Columns
 } from 'lucide-react';
 import { doc, getDoc, setDoc, onSnapshot, DocumentData, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -126,9 +128,9 @@ const initialSections = [
 const allSectionsMap = new Map(initialSections.map((s) => [s.id, s]));
 
 const templates = [
+  { name: 'Split Showcase', id: 'split-showcase', image: 'https://placehold.co/200x150.png', hint: 'split portfolio' },
+  { name: 'Terminal', id: 'terminal', image: 'https://placehold.co/200x150.png', hint: 'terminal portfolio' },
   { name: 'Modern Dark', id: 'modern-dark', image: 'https://placehold.co/200x150.png', hint: 'dark portfolio' },
-  { name: 'Clean Light', id: 'clean-light', image: 'https://placehold.co/200x150.png', hint: 'light portfolio' },
-  { name: 'Brutalist', id: 'brutalist', image: 'https://placehold.co/200x150.png', hint: 'brutalist portfolio' },
 ];
 
 const DraggableSection = ({ id, name, icon }: {id: string, name: string, icon: React.ReactElement}) => {
@@ -218,8 +220,9 @@ export default function PortfolioBuilderPage() {
   const portfolioId = searchParams.get('id');
   const { user } = useAuth();
   const { toast } = useToast();
-  const sensors = useSensors(useSensor(PointerSensor));
   
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
   const [saveStatus, setSaveStatus] = useState('Saved');
   const [activeId, setActiveId] = useState(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -328,14 +331,6 @@ export default function PortfolioBuilderPage() {
     });
   };
   
-  if (!isDataLoaded || !portfolioData) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-muted">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
   const updatePortfolioData = (updater: (prev: DocumentData) => DocumentData) => {
     setPortfolioData(prev => {
       if (!prev) return null;
@@ -445,18 +440,20 @@ export default function PortfolioBuilderPage() {
     }
   };
 
-  const renderSectionComponent = (section: any, isPublicView = false) => {
+    const renderSectionComponent = (section: any, isPublicView = false) => {
     const content = portfolioData.content[section.id] || {};
     const isEditable = !isPreviewing && !isPublicView;
 
     // A simple container for sections, more styling can be added via templates
-    const SectionWrapper = ({children, id}: {children: React.ReactNode, id: string}) => <section id={id} className="w-full px-8 py-12 md:px-16 md:py-20">{children}</section>;
+    const SectionWrapper = ({children, id, className}: {children: React.ReactNode, id: string, className?: string}) => <section id={id} className={cn("w-full px-8 py-12 md:px-16 md:py-20", className)}>{children}</section>;
     const Title = ({children}: {children: React.ReactNode}) => <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-8 text-center">{children}</h2>;
+    const EditableTitle = ({value, onChange, className}) => <Input value={value || ''} onChange={onChange} className={cn("text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-8 text-center bg-transparent border-0 h-auto p-0", className)} />;
+
 
     switch (section.type) {
         case 'header': return (
             <header className="w-full h-[60vh] flex items-center justify-center text-center px-8" style={{ background: 'linear-gradient(to right, #0f2027, #203a43, #2c5364)' }}>
-                <div className="space-y-4">
+                <div className="space-y-4 text-white">
                     {isEditable ? <Input value={content.title || ''} onChange={e => handleContentChange(section.id, 'title', e.target.value)} className="text-5xl font-extrabold tracking-tighter sm:text-6xl md:text-7xl bg-transparent border-0 text-center h-auto p-0" /> : <h1 className="text-5xl font-extrabold tracking-tighter sm:text-6xl md:text-7xl">{content.title}</h1>}
                     {isEditable ? <Input value={content.tagline || ''} onChange={e => handleContentChange(section.id, 'tagline', e.target.value)} className="max-w-[700px] mx-auto text-lg md:text-xl text-center bg-transparent border-0 h-auto p-0" /> : <p className="max-w-[700px] mx-auto text-lg md:text-xl">{content.tagline}</p>}
                     <div className="flex gap-4 justify-center">
@@ -479,7 +476,7 @@ export default function PortfolioBuilderPage() {
         case 'projects': return (
             <SectionWrapper id="projects">
                 <div className="container mx-auto">
-                    {isEditable ? <Input value={content.title || ''} onChange={e => handleContentChange(section.id, 'title', e.target.value)} className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-8 text-center bg-transparent border-0 h-auto p-0"/> : <Title>{content.title}</Title>}
+                    {isEditable ? <EditableTitle value={content.title} onChange={e => handleContentChange(section.id, 'title', e.target.value)} /> : <Title>{content.title}</Title>}
                     <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                         {(content.items || []).map((item: any, index: number) => (
                             <Card key={item.id} className="group/item relative">
@@ -501,7 +498,7 @@ export default function PortfolioBuilderPage() {
         case 'contact': return (
             <SectionWrapper id="contact">
                 <div className="container mx-auto max-w-2xl text-center">
-                    {isEditable ? <Input value={content.title || ''} onChange={e => handleContentChange(section.id, 'title', e.target.value)} className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-4 bg-transparent border-0 h-auto p-0 text-center"/> : <Title>{content.title}</Title>}
+                    {isEditable ? <EditableTitle value={content.title} onChange={e => handleContentChange(section.id, 'title', e.target.value)} className="text-center"/> : <Title>{content.title}</Title>}
                     {isEditable ? <Textarea value={content.text || ''} onChange={e => handleContentChange(section.id, 'text', e.target.value)} className="text-muted-foreground mt-2 bg-transparent border-0 p-0 text-center" rows={3} /> : <p className="text-muted-foreground">{content.text}</p>}
                     <div className="mt-6 flex justify-center gap-4">
                         <Button asChild><a href={`mailto:${content.email || ''}`}><Mail className="mr-2 h-4 w-4" /> Email Me</a></Button>
@@ -526,7 +523,79 @@ export default function PortfolioBuilderPage() {
         );
     }
   };
+
+  const renderTemplate = (isPublicView = false) => {
+    const styling = portfolioData?.styling || defaultPortfolioData.styling;
+    const isEditable = !isPreviewing && !isPublicView;
+
+    if (styling.template === 'split-showcase') {
+        const sidebarSections = ['about', 'skills', 'contact'];
+        const mainSections = ['header', 'projects', 'experience', 'testimonials'];
+        
+        const sidebarContent = portfolioData.sections.filter(s => sidebarSections.includes(s.type));
+        const mainContent = portfolioData.sections.filter(s => mainSections.includes(s.type));
+
+        return (
+            <div className='flex flex-col md:flex-row min-h-screen'>
+                <aside className="w-full md:w-1/3 md:h-screen md:sticky top-0 p-8 md:p-12 flex flex-col gap-8 border-r">
+                     <SortableContext items={portfolioSectionsIds} strategy={verticalListSortingStrategy} disabled={isEditable}>
+                        {sidebarContent.map((section: any) => (
+                             <SortableSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
+                                {renderSectionComponent(section, isPublicView)}
+                            </SortableSection>
+                        ))}
+                     </SortableContext>
+                </aside>
+                <main className='w-full md:w-2/3'>
+                     <SortableContext items={portfolioSectionsIds} strategy={verticalListSortingStrategy} disabled={isEditable}>
+                        {mainContent.map((section: any) => (
+                             <SortableSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
+                                {renderSectionComponent(section, isPublicView)}
+                            </SortableSection>
+                        ))}
+                    </SortableContext>
+                </main>
+            </div>
+        );
+    }
+    
+    if (styling.template === 'terminal') {
+        return (
+            <div className="font-mono bg-black text-green-400 min-h-screen p-4 md:p-8">
+                 <SortableContext items={portfolioSectionsIds} strategy={verticalListSortingStrategy} disabled={isEditable}>
+                    {portfolioData.sections.map((section: any) => (
+                         <SortableSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
+                             {/* You would create specific terminal-style components here */}
+                            {renderSectionComponent(section, isPublicView)}
+                        </SortableSection>
+                    ))}
+                </SortableContext>
+            </div>
+        );
+    }
+
+    // Default template (modern-dark)
+    return (
+        <div className="bg-[#111827] text-white">
+            <SortableContext items={portfolioSectionsIds} strategy={verticalListSortingStrategy} disabled={isEditable}>
+                {portfolioData.sections.map((section: any) => (
+                    <SortableSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
+                        {renderSectionComponent(section, isPublicView)}
+                    </SortableSection>
+                ))}
+            </SortableContext>
+        </div>
+    );
+  };
   
+  if (!isDataLoaded || !portfolioData) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-muted">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   const portfolioSectionsIds = portfolioData?.sections.map((s: any) => s.id) || [];
   const styling = portfolioData?.styling || defaultPortfolioData.styling;
 
@@ -658,17 +727,7 @@ export default function PortfolioBuilderPage() {
                   <div className={cn("mx-auto transition-all", isPreviewing ? 'w-full' : 'w-[90%] max-w-7xl py-8')}>
                       <div className={cn("shadow-lg overflow-hidden", isPreviewing ? 'h-full' : 'rounded-lg border')} style={portfolioStyle}>
                         <DroppableCanvas>
-                            <SortableContext items={portfolioSectionsIds} strategy={verticalListSortingStrategy} disabled={isPreviewing}>
-                              {portfolioData.sections.length > 0 ? portfolioData.sections.map((section: any) => (
-                                  <SortableSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                      {renderSectionComponent(section)}
-                                  </SortableSection>
-                              )) : (
-                                  <div className="flex items-center justify-center h-96 text-muted-foreground">
-                                      <p>Drag sections from the left panel to start building your portfolio.</p>
-                                  </div>
-                              )}
-                            </SortableContext>
+                            {renderTemplate()}
                         </DroppableCanvas>
                       </div>
                   </div>
