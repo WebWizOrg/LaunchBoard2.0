@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Menu, Rocket, LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
@@ -75,6 +75,9 @@ export function SiteHeader() {
                 isPublished: false,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
+                sections: [],
+                content: {},
+                styling: {}
             });
             router.push(`/portfolio/builder?id=${newDocRef.id}`);
         } catch (error) {
@@ -88,7 +91,7 @@ export function SiteHeader() {
 
   const navLinks = [
     { name: "Resume Builder", href: resumeBuilderHref },
-    { name: "Portfolio Builder", href: "/portfolio/builder", onClick: handlePortfolioBuilderClick },
+    // { name: "Portfolio Builder", href: "/portfolio/builder", onClick: handlePortfolioBuilderClick },
     { name: "Marketplace", href: "/#marketplace" },
     { name: "Dashboard", href: "/dashboard" },
   ]
