@@ -7,6 +7,7 @@ import { doc, getDoc, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useAuth } from '@/hooks/use-auth';
 
 // This component fetches and renders the actual resume content
 function ReadOnlyResume({ resumeId }: { resumeId: string }) {
@@ -14,6 +15,7 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
   const [loading, setLoading] = useState(true);
   const [builderModule, setBuilderModule] = useState<any>(null);
   const { theme } = useTheme();
+  const { user } = useAuth(); // Using auth to ensure styling context is available
 
   useEffect(() => {
     const fetchResume = async () => {
@@ -88,12 +90,17 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
   const OriginalBuilder = builderModule.default;
   const builderProto = OriginalBuilder.prototype;
   
-  const mockRenderSectionComponent = (section: any, context: any) => {
-    // Re-create a minimal 'this' context needed for the unbound function
+  // This is a workaround to call the class method from the builder component instance
+  // without having to instantiate the class here. We create a mock context for it.
+  const renderSectionComponent = (section, templateContext) => {
     const mockThis = {
-        state: { resumeData, isPreviewing: true, theme },
-        props: { resumeData }, // Ensure props are available if needed by the function
-        // Mock any state setters it might try to call
+        state: { 
+            resumeData, 
+            isPreviewing: true, 
+            theme: theme || 'light' 
+        },
+        props: {}, // Not needed for this method
+        // Mock any methods it might call to prevent errors
         handleContentChange: () => {},
         handleListItemChange: () => {},
         addListItem: () => {},
@@ -102,27 +109,31 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
         handleImageUpload: () => {},
     };
 
-    // Use .call() to invoke renderSectionComponent with our mocked context
-    return builderProto.renderSectionComponent.call(mockThis, section, { ...context, isPublicView: true });
+    return builderProto.renderSectionComponent.call(mockThis, section, { ...templateContext, isPublicView: true });
   }
-  
-  const boundRenderTemplate = builderProto.renderTemplate.bind({ 
-      styling, 
-      resumeData, 
-      isPreviewing: true, 
-      renderSectionComponent: mockRenderSectionComponent, 
-    });
+
+  const renderTemplate = (isPublicView = false) => {
+      const mockThis = {
+          styling,
+          resumeData,
+          isPreviewing: true,
+          renderSectionComponent,
+      };
+      return builderProto.renderTemplate.call(mockThis, isPublicView);
+  }
+
 
   return (
-    <div className="w-full max-w-4xl mx-auto shadow-2xl rounded-lg overflow-hidden" style={{ ...resumeStyle, aspectRatio: '1 / 1.4142' }}>
+    <div className="w-full max-w-4xl mx-auto shadow-2xl rounded-lg overflow-hidden bg-background" style={{ ...resumeStyle, aspectRatio: '1 / 1.4142' }}>
       <div className="absolute inset-0 transition-all" style={resumeBgStyle}></div>
       <div className="relative h-full w-full">
-        {boundRenderTemplate(true)}
+        {renderTemplate(true)}
       </div>
     </div>
   );
 }
 
+// This remains the default export for the route
 export default function SharePage({ params }: { params: { id: string } }) {
   const { id } = params;
 
