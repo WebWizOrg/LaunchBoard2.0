@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 import { doc, getDoc, DocumentData, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Rocket } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { defaultResumeData } from '@/app/builder/page';
@@ -37,6 +37,8 @@ import {
   User,
 } from 'lucide-react';
 import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 // This component fetches and renders the actual resume content
 export function ReadOnlyResume({ resumeId }: { resumeId: string }) {
@@ -288,7 +290,7 @@ export function ReadOnlyResume({ resumeId }: { resumeId: string }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full aspect-[1/1.4142] w-full">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -320,7 +322,7 @@ export function ReadOnlyResume({ resumeId }: { resumeId: string }) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto shadow-2xl rounded-lg overflow-hidden bg-background" style={resumeStyle}>
+    <div className="w-full shadow-2xl rounded-lg overflow-hidden bg-background relative" style={resumeStyle}>
       <div className="absolute inset-0 transition-all" style={resumeBgStyle}></div>
       <div className="relative h-full w-full overflow-auto">
         {renderTemplate(resumeData)}
