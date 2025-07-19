@@ -90,6 +90,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
+import { generateProjectFromRepo } from '@/ai/flows/generate-project-from-repo';
 
 // Wrapper to prevent hydration errors
 function ClientOnly({ children }: { children: React.ReactNode }) {
@@ -177,7 +178,7 @@ const DroppableCanvas = ({ children }: {children: React.ReactNode}) => {
 const createNewItem = (itemType: string) => {
     const common = { id: `${itemType}_item_${Date.now()}` };
     switch (itemType) {
-        case 'projects': return { ...common, title: 'New Project', description: 'A short description of your project.', image: 'https://placehold.co/600x400.png', hint: 'placeholder image', link: '#' };
+        case 'projects': return { ...common, title: 'New Project', description: 'A short description of your project.', image: 'https://placehold.co/600x400.png', hint: 'placeholder image', link: '#', tech: '' };
         case 'experience': return { ...common, company: 'Company Name', role: 'Your Role', dates: '2022 - Present', description: 'Key achievements and responsibilities.' };
         case 'blog': return { ...common, title: 'My Latest Blog Post', summary: 'A brief summary of what this post is about.', link: '#' };
         case 'skills': return { ...common, name: 'New Skill' };
@@ -223,6 +224,8 @@ export default function PortfolioBuilderPage() {
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [portfolioData, setPortfolioData] = useState<DocumentData | null>(null);
+  const [repoUrl, setRepoUrl] = useState('');
+  const [isGenerating, startTransition] = useTransition();
 
   useEffect(() => {
     if(!portfolioId) {
@@ -238,6 +241,10 @@ export default function PortfolioBuilderPage() {
       const portfolioRef = doc(db, 'users', user.uid, 'portfolios', portfolioId);
       setDoc(portfolioRef, dataToSave, { merge: true }).then(() => {
         setSaveStatus('Saved');
+        if (dataToSave.isPublished) {
+            const publicPortfolioRef = doc(db, 'publishedPortfolios', portfolioId);
+            setDoc(publicPortfolioRef, {...dataToSave, ownerId: user.uid});
+        }
       }).catch(error => {
         console.error("Error saving document: ", error);
         setSaveStatus('Error');
@@ -262,7 +269,7 @@ export default function PortfolioBuilderPage() {
         const data = docSnap.data();
         setPortfolioData({ ...defaultPortfolioData, ...data, styling: { ...defaultPortfolioData.styling, ...data.styling } });
       } else {
-        const newPortfolioData = { ...defaultPortfolioData, updatedAt: new Date() };
+        const newPortfolioData = { ...defaultPortfolioData, updatedAt: new Date(), isPublished: true };
         setPortfolioData(newPortfolioData);
         setDoc(portfolioRef, newPortfolioData);
       }
@@ -274,6 +281,51 @@ export default function PortfolioBuilderPage() {
 
     return () => unsubscribe();
   }, [user, portfolioId]);
+
+  const handleGenerateFromRepo = () => {
+    if (!repoUrl) {
+        toast({ title: 'Please enter a GitHub URL', variant: 'destructive' });
+        return;
+    }
+    startTransition(async () => {
+        try {
+            toast({ title: 'Analyzing repository...', description: 'This might take a moment.' });
+            const result = await generateProjectFromRepo({ githubRepoUrl: repoUrl });
+
+            const projectSectionId = portfolioData.sections.find(s => s.type === 'projects')?.id;
+
+            if (projectSectionId) {
+                 const newItem = {
+                    ...createNewItem('projects'),
+                    title: result.projectName,
+                    description: result.projectDescription,
+                    tech: result.technologies.join(', '),
+                    link: repoUrl,
+                };
+                
+                updatePortfolioData(prev => {
+                  const newItems = [...(prev.content[projectSectionId]?.items || []), newItem];
+                  return {
+                      ...prev,
+                      content: {
+                          ...prev.content,
+                          [projectSectionId]: {
+                              ...prev.content[projectSectionId],
+                              items: newItems
+                          }
+                      }
+                  };
+                });
+                toast({ title: 'Project added successfully!', description: `"${result.projectName}" has been added to your portfolio.` });
+            } else {
+                toast({ title: 'No "Projects" section found', description: 'Please add a Projects section to your portfolio first.', variant: 'destructive' });
+            }
+        } catch (error) {
+            console.error('Error generating project from repo:', error);
+            toast({ title: 'Failed to generate project', description: 'Please check the URL and try again.', variant: 'destructive' });
+        }
+    });
+  };
   
   if (!isDataLoaded || !portfolioData) {
     return (
@@ -434,7 +486,8 @@ export default function PortfolioBuilderPage() {
                                 <CardContent className="p-4">
                                     <Image src={item.image || "https://placehold.co/600x400.png"} width={600} height={400} alt={item.title} className="rounded-md mb-4" data-ai-hint={item.hint || 'project screenshot'}/>
                                     {isEditable ? <Input value={item.title || ''} onChange={e => handleListItemChange(section.id, index, 'title', e.target.value)} className="text-xl font-bold bg-transparent border-0 h-auto p-0" /> : <h3 className="text-xl font-bold">{item.title}</h3>}
-                                    {isEditable ? <Textarea value={item.description || ''} onChange={e => handleListItemChange(section.id, index, 'description', e.target.value)} className="text-muted-foreground mt-2 bg-transparent border-0 p-0" rows={3} /> : <p className="text-muted-foreground mt-2">{item.description}</p>}
+                                    {isEditable ? <Textarea value={item.description || ''} onChange={e => handleListItemChange(section.id, index, 'description', e.target.value)} className="mt-2 bg-transparent border-0 p-0" rows={3} placeholder="Project description..." /> : <p className="text-muted-foreground mt-2">{item.description}</p>}
+                                    {isEditable ? <Input value={item.tech || ''} onChange={e => handleListItemChange(section.id, index, 'tech', e.target.value)} className="mt-2" placeholder="Tech stack, comma-separated" /> : <p className="text-sm text-muted-foreground mt-2">{item.tech}</p>}
                                     {isEditable ? <Input value={item.link || ''} onChange={e => handleListItemChange(section.id, index, 'link', e.target.value)} className="mt-4" placeholder="Link URL" /> : <Button asChild variant="link" className="mt-4 p-0"><a href={item.link}>View Project <ArrowRight className="ml-2 h-4 w-4" /></a></Button>}
                                 </CardContent>
                             </Card>
@@ -495,11 +548,31 @@ export default function PortfolioBuilderPage() {
               <Tabs defaultValue="content" className="flex flex-col h-full">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="content">Content</TabsTrigger>
-                  <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+                  <TabsTrigger value="marketplace">Templates</TabsTrigger>
                   <TabsTrigger value="design">Design</TabsTrigger>
                 </TabsList>
                 <ScrollArea className="flex-1">
                   <TabsContent value="content" className="p-4">
+                    <Card className="mb-4">
+                      <CardHeader className="p-4">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Bot className="h-5 w-5 text-primary" /> AI Assistant
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0">
+                        <div className="space-y-2">
+                            <Label htmlFor="github-repo-url">GitHub Repository URL</Label>
+                            <div className="flex gap-2">
+                                <Input id="github-repo-url" placeholder="https://github.com/user/repo" value={repoUrl} onChange={e => setRepoUrl(e.target.value)} disabled={isGenerating} />
+                                <Button onClick={handleGenerateFromRepo} disabled={isGenerating} size="icon">
+                                    {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                                </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">Generate a project summary from a public repo.</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
                     <h3 className="mb-4 text-lg font-semibold">Sections</h3>
                     <SortableContext items={initialSections.map(s => s.id)} strategy={verticalListSortingStrategy}>
                       <div className="space-y-2">
