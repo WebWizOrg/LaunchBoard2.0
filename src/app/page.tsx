@@ -11,7 +11,8 @@ import {
   Palette,
   Share2,
   Bot,
-  Upload
+  Upload,
+  PlayCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -108,6 +109,32 @@ export default function Home() {
               <Button asChild variant="outline" size="lg">
                 <Link href="#ai-demo">Try the AI Demo <ChevronRight className="ml-2 h-5 w-5" /></Link>
               </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Video Section */}
+        <section id="video-intro" className="py-16 md:py-24 bg-background">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="text-center">
+              <h2 className="text-3xl md:text-4xl font-bold font-headline">
+                See Launchboard in Action
+              </h2>
+              <p className="max-w-2xl mx-auto mt-4 text-lg text-muted-foreground">
+                Watch our quick introduction to see how you can build a stunning portfolio in minutes.
+              </p>
+            </div>
+            <div className="max-w-4xl mx-auto mt-12 shadow-2xl rounded-lg overflow-hidden border">
+              <div className="relative aspect-video">
+                  <iframe
+                      className="absolute top-0 left-0 w-full h-full"
+                      src="https://www.youtube.com/embed/QouVw36A_38" // Placeholder video
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                  ></iframe>
+              </div>
             </div>
           </div>
         </section>
