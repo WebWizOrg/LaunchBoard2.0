@@ -1,5 +1,3 @@
-
-
 // src/app/builder/page.tsx
 'use client';
 
@@ -58,6 +56,7 @@ import {
   X,
   Image as ImageIcon,
   Loader2,
+  Share,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -114,6 +113,7 @@ const initialSections = [
     { id: 'header', icon: <User />, name: 'Header' },
     { id: 'summary', icon: <FileText />, name: 'Summary' },
     { id: 'contact', icon: <Phone />, name: 'Contact' },
+    { id: 'socials', icon: <Share />, name: 'Socials' },
     { id: 'education', icon: <GraduationCap />, name: 'Education' },
     { id: 'experience', icon: <Briefcase />, name: 'Experience' },
     { id: 'skills', icon: <Sparkles />, name: 'Skills' },
@@ -125,6 +125,7 @@ const initialSections = [
     { id: 'links', icon: <LinkIcon />, name: 'Links' },
     { id: 'recommendations', icon: <Quote />, name: 'Recommendations' },
     { id: 'cover_letter', icon: <Bot />, name: 'Cover Letter' },
+    { id: 'image', icon: <ImageIcon />, name: 'Image' },
     { id: 'subtitle', icon: <Type />, name: 'Subtitle' },
     { id: 'line_break', icon: <Minus/>, name: 'Line Break' },
 ];
@@ -146,6 +147,8 @@ const templates = [
   { name: 'Student', id: 'student', image: 'https://placehold.co/150x212.png', hint: 'student resume' },
   { name: 'Developer', id: 'developer', image: 'https://placehold.co/150x212.png', hint: 'developer resume' },
   { name: 'Minimal CV', id: 'minimal-cv', image: 'https://placehold.co/150x212.png', hint: 'minimal cv' },
+  { name: 'Two-Column Balanced', id: 'two-column-balanced', image: 'https://placehold.co/150x212.png', hint: 'two column resume' },
+  { name: 'Showcase First', id: 'showcase-first', image: 'https://placehold.co/150x212.png', hint: 'portfolio resume' },
 ];
 
 
@@ -251,6 +254,8 @@ const createNewItem = (itemType) => {
             return { ...common, author: '', text: '' };
         case 'skills':
             return { ...common, skill: 'New Skill', level: 50 };
+        case 'socials':
+            return { ...common, platform: 'linkedin', username: ''};
         default:
             return { ...common, text: '' };
     }
@@ -410,6 +415,17 @@ export default function BuilderPage() {
       }
   };
 
+  const handleImageUpload = (sectionId, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            handleContentChange(sectionId, 'src', reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
 
   const handleDragStart = (event) => setActiveId(event.active.id);
 
@@ -431,12 +447,14 @@ export default function BuilderPage() {
       
       let defaultContent = { title: allSectionsMap.get(newSectionType)?.name || 'New Section' };
 
-      if (['experience', 'education', 'projects', 'certifications', 'links', 'recommendations', 'skills'].includes(newSectionType)) {
+      if (['experience', 'education', 'projects', 'certifications', 'links', 'recommendations', 'skills', 'socials'].includes(newSectionType)) {
           defaultContent.items = [];
       } else if (newSectionType === 'header') {
           defaultContent = { name: 'Your Name', tagline: 'Your Role', avatar: '', showAvatar: true, links: [] };
       } else if (newSectionType === 'contact') {
           defaultContent = { title: 'Contact', phone: '', email: '', address: '' };
+      } else if (newSectionType === 'image') {
+          defaultContent = { title: 'Image', src: '', width: 100 };
       } else {
         defaultContent.text = '';
       }
@@ -598,6 +616,33 @@ export default function BuilderPage() {
                   </div>
                 </div>
               );
+            case 'socials':
+                return (
+                    <div className="mt-6">
+                        <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={Share} />
+                        <div className="space-y-2">
+                            {(content.items || []).map((item, index) => (
+                                <div key={item.id} className="relative group/item flex items-center gap-2">
+                                     <button onClick={() => removeListItem(section.id, index)} className="h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>
+                                     <Select value={item.platform} onValueChange={(val) => handleListItemChange(section.id, index, 'platform', val)}>
+                                        <SelectTrigger className="w-[120px]">
+                                            <SelectValue placeholder="Platform" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="linkedin">LinkedIn</SelectItem>
+                                            <SelectItem value="github">GitHub</SelectItem>
+                                            <SelectItem value="twitter">Twitter</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Input placeholder="Username or Profile URL" value={item.username} onChange={(e) => handleListItemChange(section.id, index, 'username', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                </div>
+                            ))}
+                            <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, 'socials')}>
+                                <Plus className="h-4 w-4 mr-2" /> Add Social Link
+                            </Button>
+                        </div>
+                    </div>
+                );
           case 'summary':
           case 'cover_letter':
               return (
@@ -730,6 +775,30 @@ export default function BuilderPage() {
                 <Textarea value={content.text} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
               </div>
             );
+            case 'image':
+              return (
+                  <div className="mt-6">
+                      <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={ImageIcon} />
+                      <div className="relative group w-full" style={{ width: `${content.width}%`}}>
+                          <Image
+                              src={content.src || 'https://placehold.co/600x400.png'}
+                              alt={content.title || "Uploaded image"}
+                              width={600}
+                              height={400}
+                              data-ai-hint="placeholder"
+                              className="w-full h-auto object-cover border-2"
+                          />
+                          <label htmlFor={`image-upload-${section.id}`} className="absolute inset-0 bg-black/50 flex items-center justify-center text-white cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                              <ImageIcon className="h-8 w-8" />
+                          </label>
+                          <input id={`image-upload-${section.id}`} type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(section.id, e)} />
+                      </div>
+                      <div className="mt-2">
+                        <Label htmlFor={`image-width-${section.id}`}>Width</Label>
+                        <Slider id={`image-width-${section.id}`} value={[content.width]} onValueChange={(val) => handleContentChange(section.id, 'width', val[0])} min={10} max={100} />
+                      </div>
+                  </div>
+              );
            case 'subtitle':
                 return (
                     <div className="mt-4">
@@ -1084,6 +1153,98 @@ export default function BuilderPage() {
                           ))}
                         </SortableContext>
                     </div>
+                </div>
+            );
+        }
+
+        if (styling.template === 'two-column-balanced') {
+            const leftSections = ['header', 'contact', 'skills', 'languages', 'links', 'certifications'];
+            const rightSections = ['summary', 'experience', 'projects', 'achievements', 'recommendations', 'cover_letter'];
+            const publicationsSection = resumeData.sections.find(s => s.type === 'publications');
+
+            const leftContent = resumeData.sections.filter(s => leftSections.includes(s.type));
+            const rightContent = resumeData.sections.filter(s => rightSections.includes(s.type));
+
+            return (
+                <div className="p-8">
+                    <div className="flex gap-8">
+                        <div className="w-[30%]">
+                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                                {leftContent.map((section) => (
+                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
+                                        {renderSectionComponent(section)}
+                                    </SortableResumeSection>
+                                ))}
+                            </SortableContext>
+                        </div>
+                        <div className="w-[70%]">
+                             <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                                {rightContent.map((section) => (
+                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
+                                        {renderSectionComponent(section)}
+                                    </SortableResumeSection>
+                                ))}
+                            </SortableContext>
+                        </div>
+                    </div>
+                    {publicationsSection && (
+                        <div className="mt-8">
+                             <SortableResumeSection key={publicationsSection.id} id={publicationsSection.id} onRemove={removeSection}>
+                                {renderSectionComponent(publicationsSection)}
+                            </SortableResumeSection>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        if (styling.template === 'showcase-first') {
+            const sidebarSections = ['skills', 'certifications', 'languages', 'links'];
+            const mainSections = ['projects', 'achievements', 'experience', 'education'];
+            const footerSections = ['summary', 'contact'];
+            
+            const headerSection = resumeData.sections.find(s => s.type === 'header');
+            const sidebarContent = resumeData.sections.filter(s => sidebarSections.includes(s.type));
+            const mainContent = resumeData.sections.filter(s => mainSections.includes(s.type));
+            const footerContent = resumeData.sections.filter(s => footerSections.includes(s.type));
+
+
+            return (
+                <div className="p-8">
+                    {headerSection && (
+                        <SortableResumeSection key={headerSection.id} id={headerSection.id} onRemove={removeSection}>
+                            {renderSectionComponent(headerSection)}
+                        </SortableResumeSection>
+                    )}
+                    <div className="flex flex-row-reverse gap-8 mt-8">
+                        <aside className="w-[30%]">
+                             <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                                {sidebarContent.map((section) => (
+                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
+                                        {renderSectionComponent(section)}
+                                    </SortableResumeSection>
+                                ))}
+                            </SortableContext>
+                        </aside>
+                        <main className="w-[70%]">
+                             <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                                {mainContent.map((section) => (
+                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
+                                        {renderSectionComponent(section)}
+                                    </SortableResumeSection>
+                                ))}
+                            </SortableContext>
+                        </main>
+                    </div>
+                     <footer className="mt-8 border-t pt-4">
+                        <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                            {footerContent.map((section) => (
+                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
+                                    {renderSectionComponent(section)}
+                                </SortableResumeSection>
+                            ))}
+                        </SortableContext>
+                    </footer>
                 </div>
             );
         }
