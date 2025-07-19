@@ -59,6 +59,7 @@ import {
   Image as ImageIcon,
   Loader2,
   Share,
+  Upload,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -93,6 +94,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { rewriteResumeText } from '@/ai/flows/rewrite-resume-text';
+import { pdfToImage } from '@/ai/flows/pdf-to-image';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
@@ -395,6 +397,7 @@ export default function BuilderPage() {
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [textToRewrite, setTextToRewrite] = useState('');
   const [isPending, startTransition] = useTransition();
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
   const resumeSectionsIds = resumeData?.sections.map(s => s.id) || [];
@@ -489,6 +492,32 @@ export default function BuilderPage() {
   const handleFontChange = (fontFamily) => {
     handleStyleChange('fontFamily', fontFamily);
   };
+  
+  const handlePdfTemplateUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setIsUploading(true);
+      toast({ title: 'Processing PDF...', description: 'This may take a moment.' });
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const pdfDataUri = reader.result as string;
+          const { imageDataUri } = await pdfToImage({ pdfDataUri });
+          handleStyleChange('backgroundImage', imageDataUri);
+          toast({ title: 'Template applied!', description: 'Your PDF has been set as the resume background.' });
+        } catch (error) {
+          console.error('Error converting PDF to image', error);
+          toast({ title: 'Error processing PDF', description: 'Could not convert the PDF to an image. Please try another file.', variant: 'destructive' });
+        } finally {
+          setIsUploading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } else if (file) {
+        toast({ title: 'Invalid File Type', description: 'Please upload a PDF file.', variant: 'destructive' });
+    }
+  };
+
 
   const handleBackgroundImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -1675,7 +1704,14 @@ export default function BuilderPage() {
                   </div>
                   <div>
                       <h3 className="mb-4 text-lg font-semibold">Background Image</h3>
-                      <Input id="bgImage" type="file" accept="image/*" onChange={handleBackgroundImageUpload} className="text-sm" />
+                      <div className="space-y-2">
+                        <Label htmlFor="pdf-template-upload" className={cn(buttonVariants({ variant: 'outline'}), "w-full cursor-pointer")}>
+                            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
+                            Upload PDF Template
+                        </Label>
+                        <input id="pdf-template-upload" type="file" accept="application/pdf" onChange={handlePdfTemplateUpload} className="hidden" disabled={isUploading}/>
+                        <Input id="bgImage" type="file" accept="image/*" onChange={handleBackgroundImageUpload} className="text-sm" />
+                      </div>
                       {styling.backgroundImage && (
                           <div className="mt-4 space-y-4">
                               <div>

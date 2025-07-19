@@ -27,9 +27,19 @@ import { Badge } from '@/components/ui/badge';
 import { AiResumeDemo } from '@/components/ai-resume-demo';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const { user } = useAuth();
+  const router = useRouter();
+
+  const handleUploadClick = () => {
+    if (user) {
+      router.push('/builder');
+    } else {
+      router.push('/login');
+    }
+  };
 
   const templates = [
     { name: 'Horizontal Split', id: 'horizontal-split', image: 'https://placehold.co/400x566.png', hint: 'resume template' },
@@ -168,7 +178,7 @@ export default function Home() {
               </ul>
             </div>
              <div className="text-center mt-12">
-                <Button size="lg" variant="outline" disabled={!user}>
+                <Button size="lg" variant="outline" onClick={handleUploadClick}>
                     <Upload className="mr-2 h-5 w-5" />
                     Upload Template
                 </Button>
