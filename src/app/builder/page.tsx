@@ -1,4 +1,5 @@
 
+
 // src/app/builder/page.tsx
 'use client';
 
@@ -86,7 +87,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getAiPoweredResumeRecommendations } from '@/ai/flows/smart-recommendations';
+import { rewriteResumeText } from '@/ai/flows/rewrite-resume-text';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
@@ -302,6 +303,8 @@ export default function BuilderPage() {
   });
 
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [textToRewrite, setTextToRewrite] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   
@@ -495,17 +498,26 @@ export default function BuilderPage() {
   };
 
   const handleGetSuggestions = () => {
+    if (!textToRewrite.trim()) {
+      toast({
+        title: 'Text is empty',
+        description: 'Please enter some text to get suggestions.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     startTransition(async () => {
+      setAiSuggestions([]);
       try {
-        const response = await getAiPoweredResumeRecommendations({ jobTitle: 'Software Engineer', industry: 'Technology' });
-        toast({
-            title: 'AI Suggestions Ready!',
-            description: (
-              <ul className="list-disc pl-5">
-                {response.bulletPoints.slice(0, 3).map((bp, i) => <li key={i}>{bp}</li>)}
-              </ul>
-            )
+        const headerSection = resumeData.sections.find(s => s.type === 'header');
+        const jobTitle = headerSection ? resumeData.content[headerSection.id]?.tagline : undefined;
+
+        const response = await rewriteResumeText({
+          textToRewrite: textToRewrite,
+          jobTitle,
         });
+        setAiSuggestions(response.suggestions);
       } catch (error) {
         console.error('Error getting AI suggestions:', error);
         toast({
@@ -553,7 +565,7 @@ export default function BuilderPage() {
   
     const renderSectionComponent = (section, templateContext = {}) => {
         const content = resumeData.content[section.id] || {};
-        const { isAccentBg, titleClass } = templateContext;
+        const { isAccentBg = false, titleClass = '' } = templateContext;
 
         if (isPreviewing) {
             if (section.type === 'summary' && !content.text) return null;
@@ -561,16 +573,16 @@ export default function BuilderPage() {
             if (section.type === 'projects' && (!content.items || content.items.length === 0)) return null;
         }
 
-        const TitleComponent = ({value, icon: Icon, className, titleClass: localTitleClass, ...props}) => (
+        const TitleComponent = ({value, icon: Icon, className, ...props}) => (
             <div className="flex items-center gap-3 mb-2">
                 {Icon && <Icon className="h-6 w-6" style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }} />}
                 {isPreviewing ? (
-                    <div className={cn("text-xl font-bold w-full", localTitleClass, className)} {...props}>{value}</div>
+                    <div className={cn("text-xl font-bold w-full", titleClass, className)} {...props}>{value}</div>
                 ) : (
                     <Input 
                         value={value || ''} 
                         onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} 
-                        className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", localTitleClass, className)} 
+                        className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", titleClass, className)} 
                         style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)', ...props.style }}
                     />
                 )}
@@ -1633,9 +1645,9 @@ export default function BuilderPage() {
           </DragOverlay>
 
           {/* AI Sidebar */}
-          <aside className={cn("border-l bg-background transition-all duration-300 ease-in-out", isAiPanelOpen ? "w-72" : "w-0")}>
-            <div className={cn("h-full transition-all", isAiPanelOpen ? 'opacity-100 p-4' : 'opacity-0 p-0 overflow-hidden')}>
-                <Card className="h-full">
+          <aside className={cn("border-l bg-background transition-all duration-300 ease-in-out", isAiPanelOpen ? "w-80" : "w-0")}>
+            <div className={cn("h-full transition-all flex flex-col", isAiPanelOpen ? 'opacity-100 p-4' : 'opacity-0 p-0 overflow-hidden')}>
+                <Card className="flex-1 flex flex-col">
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between text-lg">
                     <div className="flex items-center gap-2">
@@ -1647,14 +1659,44 @@ export default function BuilderPage() {
                     </Button>
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                    Get AI-powered help to improve your resume. Enter a job title and industry for tailored suggestions.
-                    </p>
-                    <Button className="w-full mt-4" onClick={handleGetSuggestions} disabled={isPending}>
-                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                    Suggest Bullet Points
+                <CardContent className="flex-1 flex flex-col gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="ai-rewrite-input">Text to improve</Label>
+                      <Textarea 
+                        id="ai-rewrite-input"
+                        placeholder="Paste a bullet point or paragraph from your resume here..."
+                        value={textToRewrite}
+                        onChange={(e) => setTextToRewrite(e.target.value)}
+                        rows={5}
+                      />
+                    </div>
+                    <Button className="w-full mt-auto" onClick={handleGetSuggestions} disabled={isPending}>
+                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                        Rewrite
                     </Button>
+                     {aiSuggestions.length > 0 && (
+                        <Separator />
+                     )}
+                     <ScrollArea className="flex-1">
+                        <div className="space-y-4">
+                          {aiSuggestions.map((suggestion, index) => (
+                            <div key={index} className="text-sm p-3 border rounded-lg bg-muted/50 relative group">
+                              <p>{suggestion}</p>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(suggestion);
+                                  toast({ title: "Copied to clipboard!"});
+                                }}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                     </ScrollArea>
                 </CardContent>
                 </Card>
             </div>
