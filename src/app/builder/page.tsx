@@ -62,7 +62,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { doc, getDoc, setDoc, onSnapshot, DocumentData } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, DocumentData, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { debounce } from 'lodash';
@@ -81,6 +81,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -270,6 +271,7 @@ const createNewItem = (itemType) => {
 
 const defaultResumeData = {
   name: 'Untitled Resume',
+  isPublished: false,
   sections: [
     {id: 'header_1', type: 'header'},
     {id: 'summary_1', type: 'summary'},
@@ -319,6 +321,10 @@ export default function BuilderPage() {
       const resumeRef = doc(db, 'users', user.uid, 'resumes', resumeId);
       setDoc(resumeRef, dataToSave, { merge: true }).then(() => {
         setSaveStatus('Saved');
+        if (dataToSave.isPublished) {
+            const publicResumeRef = doc(db, 'publishedResumes', resumeId);
+            setDoc(publicResumeRef, {...dataToSave, ownerId: user.uid});
+        }
       }).catch(error => {
         console.error("Error saving document: ", error);
         setSaveStatus('Error');
@@ -345,9 +351,8 @@ export default function BuilderPage() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setResumeData({
-          name: data.name || defaultResumeData.name,
-          sections: data.sections || defaultResumeData.sections,
-          content: data.content || defaultResumeData.content,
+          ...defaultResumeData,
+          ...data,
           styling: { ...defaultResumeData.styling, ...data.styling },
         });
       } else {
@@ -364,6 +369,23 @@ export default function BuilderPage() {
 
     return () => unsubscribe();
   }, [user, resumeId]);
+
+  const handlePublishChange = async (isPublished: boolean) => {
+    if (!resumeId || !resumeData) return;
+    
+    updateResumeData(prev => ({ ...prev, isPublished }));
+
+    const publicResumeRef = doc(db, 'publishedResumes', resumeId);
+    if (isPublished) {
+        toast({ title: 'Publishing resume...' });
+        await setDoc(publicResumeRef, {...resumeData, isPublished: true, ownerId: user.uid });
+        toast({ title: 'Resume published!', description: 'Anyone with the link can now view it.' });
+    } else {
+        toast({ title: 'Unpublishing resume...' });
+        await deleteDoc(publicResumeRef);
+        toast({ title: 'Resume unpublished.' });
+    }
+  };
 
 
   const { theme } = useTheme();
@@ -652,27 +674,28 @@ export default function BuilderPage() {
   
     const renderSectionComponent = (section, templateContext = {}) => {
         const content = resumeData.content[section.id] || {};
-        const { isAccentBg = false } = templateContext;
+        const { isAccentBg = false, isPublicView = false } = templateContext;
+        const isEditable = !isPreviewing && !isPublicView;
 
-        if (isPreviewing) {
+        if ((isPreviewing || isPublicView) && !isEditable) {
             if (section.type === 'summary' && !content.text) return null;
             if (section.type === 'experience' && (!content.items || content.items.length === 0)) return null;
             if (section.type === 'projects' && (!content.items || content.items.length === 0)) return null;
         }
 
         const TitleComponent = ({value, icon: Icon, className, ...props}) => {
-            const { titleClass, ...restProps } = props; // Extract titleClass to avoid passing to DOM
+            const { titleClass } = props; // Extract titleClass to avoid passing to DOM
             return (
                 <div className="flex items-center gap-3 mb-2">
                     {Icon && <Icon className="h-6 w-6" style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }} />}
-                    {isPreviewing ? (
-                        <div className={cn("text-xl font-bold w-full", titleClass, className)} {...restProps}>{value}</div>
+                    {!isEditable ? (
+                        <div className={cn("text-xl font-bold w-full", titleClass, className)}>{value}</div>
                     ) : (
                         <Input 
                             value={value || ''} 
                             onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} 
                             className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", titleClass, className)} 
-                            style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)', ...restProps.style }}
+                            style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }}
                         />
                     )}
                 </div>
@@ -695,7 +718,7 @@ export default function BuilderPage() {
                                 className="rounded-full object-cover w-32 h-32 border-2"
                                 style={{borderColor: 'var(--resume-accent-color)'}}
                             />
-                            {!isPreviewing &&
+                            {isEditable &&
                             <>
                                 <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                                     <ImageIcon className="h-8 w-8" />
@@ -705,7 +728,7 @@ export default function BuilderPage() {
                             }
                         </div>
                     )}
-                    {isPreviewing ? (
+                    {!isEditable ? (
                         <>
                             <h1 className="text-4xl font-bold text-center" style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}>{content.name}</h1>
                             <p className="text-muted-foreground text-center">{content.tagline}</p>
@@ -726,7 +749,7 @@ export default function BuilderPage() {
                         </>
                     )}
 
-                   {!isPreviewing && <div className="flex items-center justify-center gap-2 mt-2">
+                   {isEditable && <div className="flex items-center justify-center gap-2 mt-2">
                         <Label htmlFor={`show-avatar-${section.id}`}>Show Avatar</Label>
                         <Switch
                             id={`show-avatar-${section.id}`}
@@ -743,15 +766,15 @@ export default function BuilderPage() {
                   <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
-                        {isPreviewing ? <p className="text-sm">{content.email}</p> : <Input placeholder="Email Address" value={content.email || ''} onChange={(e) => handleContentChange(section.id, 'email', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
+                        {!isEditable ? <p className="text-sm">{content.email}</p> : <Input placeholder="Email Address" value={content.email || ''} onChange={(e) => handleContentChange(section.id, 'email', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
                       </div>
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
-                        {isPreviewing ? <p className="text-sm">{content.phone}</p> : <Input placeholder="Phone Number" value={content.phone || ''} onChange={(e) => handleContentChange(section.id, 'phone', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
+                        {!isEditable ? <p className="text-sm">{content.phone}</p> : <Input placeholder="Phone Number" value={content.phone || ''} onChange={(e) => handleContentChange(section.id, 'phone', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
-                        {isPreviewing ? <p className="text-sm">{content.address}</p> : <Input placeholder="Your Address" value={content.address || ''} onChange={(e) => handleContentChange(section.id, 'address', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
+                        {!isEditable ? <p className="text-sm">{content.address}</p> : <Input placeholder="Your Address" value={content.address || ''} onChange={(e) => handleContentChange(section.id, 'address', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
                       </div>
                   </div>
                 </div>
@@ -763,8 +786,8 @@ export default function BuilderPage() {
                         <div className="space-y-2">
                             {(content.items || []).map((item, index) => (
                                 <div key={item.id} className="relative group/item flex items-center gap-2">
-                                     {!isPreviewing && <button onClick={() => removeListItem(section.id, index)} className="h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>}
-                                    {isPreviewing ? (
+                                     {isEditable && <button onClick={() => removeListItem(section.id, index)} className="h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>}
+                                    {!isEditable ? (
                                         <div className="flex items-center gap-2 text-sm">
                                             {item.platform === 'linkedin' && <Linkedin className="h-4 w-4" />}
                                             {item.platform === 'github' && <Github className="h-4 w-4" />}
@@ -788,7 +811,7 @@ export default function BuilderPage() {
                                     )}
                                 </div>
                             ))}
-                            {!isPreviewing && <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, 'socials')}>
+                            {isEditable && <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, 'socials')}>
                                 <Plus className="h-4 w-4 mr-2" /> Add Social Link
                             </Button>}
                         </div>
@@ -799,7 +822,7 @@ export default function BuilderPage() {
               return (
                   <div className="mt-6">
                       <TitleComponent value={content.title || ''} icon={section.type === 'summary' ? FileText : Bot} titleClass={templateContext.titleClass} />
-                      {isPreviewing ? <p className="whitespace-pre-wrap text-sm">{content.text}</p> : <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />}
+                      {!isEditable ? <p className="whitespace-pre-wrap text-sm">{content.text}</p> : <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />}
                   </div>
               );
           case 'recommendations':
@@ -809,12 +832,12 @@ export default function BuilderPage() {
                      <div className="space-y-4">
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
-                                 {!isPreviewing && <button onClick={() => removeListItem(section.id, index)} className="absolute top-0 -right-2 h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>}
-                                 {isPreviewing ? <blockquote className="text-sm italic">"{item.text}"</blockquote> : <Textarea placeholder="Recommendation text..." value={item.text || ''} onChange={(e) => handleListItemChange(section.id, index, 'text', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0 italic" />}
-                                 {isPreviewing ? <cite className="block text-right font-semibold not-italic mt-2">&mdash; {item.author}</cite> : <Input placeholder="Author Name, Title @ Company" value={item.author || ''} onChange={(e) => handleListItemChange(section.id, index, 'author', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-right font-semibold" />}
+                                 {isEditable && <button onClick={() => removeListItem(section.id, index)} className="absolute top-0 -right-2 h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>}
+                                 {!isEditable ? <blockquote className="text-sm italic">"{item.text}"</blockquote> : <Textarea placeholder="Recommendation text..." value={item.text || ''} onChange={(e) => handleListItemChange(section.id, index, 'text', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0 italic" />}
+                                 {!isEditable ? <cite className="block text-right font-semibold not-italic mt-2">&mdash; {item.author}</cite> : <Input placeholder="Author Name, Title @ Company" value={item.author || ''} onChange={(e) => handleListItemChange(section.id, index, 'author', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-right font-semibold" />}
                              </div>
                          ))}
-                         {!isPreviewing && <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, 'recommendations')}>
+                         {isEditable && <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, 'recommendations')}>
                              <Plus className="h-4 w-4 mr-2" /> Add Recommendation
                          </Button>}
                      </div>
@@ -839,9 +862,9 @@ export default function BuilderPage() {
                      <div className="space-y-4">
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
-                                 {!isPreviewing && <button onClick={() => removeListItem(section.id, index)} className="absolute top-0 -right-2 h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>}
+                                 {isEditable && <button onClick={() => removeListItem(section.id, index)} className="absolute top-0 -right-2 h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>}
                                  
-                                 {isPreviewing ? (
+                                 {!isEditable ? (
                                     <>
                                         {section.type === 'education' && <>
                                             <p className="font-semibold">{item.institution}</p>
@@ -901,7 +924,7 @@ export default function BuilderPage() {
                                  )}
                              </div>
                          ))}
-                         {!isPreviewing && <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, itemConfig.type)}>
+                         {isEditable && <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, itemConfig.type)}>
                              <Plus className="h-4 w-4 mr-2" /> Add Entry
                          </Button>}
                      </div>
@@ -915,7 +938,16 @@ export default function BuilderPage() {
                     icon={Sparkles}
                     titleClass={templateContext.titleClass}
                 />
-                 {templateContext.variant === 'creative' && !isPreviewing ? (
+                 {templateContext.variant === 'creative' && !isEditable ? (
+                     <div className="space-y-4">
+                         {(content.items || []).map((item) => (
+                             <div key={item.id} className="flex items-center gap-4">
+                                <p className="w-1/3">{item.skill}</p>
+                                <Progress value={item.level} />
+                             </div>
+                         ))}
+                     </div>
+                 ) : templateContext.variant === 'creative' && isEditable ? (
                      <div className="space-y-4">
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item flex items-center gap-4">
@@ -928,16 +960,7 @@ export default function BuilderPage() {
                              <Plus className="h-4 w-4 mr-2" /> Add Skill
                          </Button>
                      </div>
-                 ) : templateContext.variant === 'creative' && isPreviewing ? (
-                     <div className="space-y-4">
-                         {(content.items || []).map((item) => (
-                             <div key={item.id} className="flex items-center gap-4">
-                                <p className="w-1/3">{item.skill}</p>
-                                <Progress value={item.level} />
-                             </div>
-                         ))}
-                     </div>
-                 ) : isPreviewing ? (
+                 ) : !isEditable ? (
                     <p className="text-sm">{content.text}</p>
                  ) : (
                     <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`e.g., Python, JavaScript, Public Speaking...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
@@ -959,13 +982,13 @@ export default function BuilderPage() {
                     icon={textIconMap[section.type]}
                     titleClass={templateContext.titleClass}
                 />
-                {isPreviewing ? <p className="whitespace-pre-wrap text-sm">{content.text}</p> : <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />}
+                {!isEditable ? <p className="whitespace-pre-wrap text-sm">{content.text}</p> : <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />}
               </div>
             );
             case 'image':
               return (
                   <div className="mt-6">
-                      {!isPreviewing && <TitleComponent value={content.title || ''} icon={ImageIcon} titleClass={templateContext.titleClass} />}
+                      {isEditable && <TitleComponent value={content.title || ''} icon={ImageIcon} titleClass={templateContext.titleClass} />}
                       <div className="relative group w-full" style={{ width: `${content.width}%`}}>
                           <Image
                               src={content.src || 'https://placehold.co/600x400.png'}
@@ -975,7 +998,7 @@ export default function BuilderPage() {
                               data-ai-hint="placeholder"
                               className="w-full h-auto object-cover border-2"
                           />
-                          {!isPreviewing && 
+                          {isEditable && 
                             <>
                                 <label htmlFor={`image-upload-${section.id}`} className="absolute inset-0 bg-black/50 flex items-center justify-center text-white cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                                     <ImageIcon className="h-8 w-8" />
@@ -984,7 +1007,7 @@ export default function BuilderPage() {
                             </>
                           }
                       </div>
-                      {!isPreviewing && <div className="mt-2">
+                      {isEditable && <div className="mt-2">
                         <Label htmlFor={`image-width-${section.id}`}>Width</Label>
                         <Slider id={`image-width-${section.id}`} value={[content.width]} onValueChange={(val) => handleContentChange(section.id, 'width', val[0])} min={10} max={100} />
                       </div>}
@@ -993,7 +1016,7 @@ export default function BuilderPage() {
            case 'subtitle':
                 return (
                     <div className="mt-4">
-                        {isPreviewing ? (
+                        {!isEditable ? (
                             <h3 className="text-lg font-semibold">{content.text}</h3>
                         ) : (
                             <Input 
@@ -1012,7 +1035,7 @@ export default function BuilderPage() {
         }
     };
 
-    const renderTemplate = () => {
+    const renderTemplate = (isPublicView = false) => {
 
         if (styling.template === 'classic') {
           const headerSection = resumeData.sections.find(s => s.type === 'header');
@@ -1024,12 +1047,13 @@ export default function BuilderPage() {
           const socialItems = socialsContent?.items || [];
           const githubItem = socialItems.find(i => i.platform === 'github');
           const linkedinItem = socialItems.find(i => i.platform === 'linkedin');
+          const isEditable = !isPreviewing && !isPublicView;
 
           return (
             <div className="p-10 space-y-6">
               {/* Header */}
               <header className="text-center space-y-2">
-                {isPreviewing ? (
+                {!isEditable ? (
                     <h1 className="text-4xl font-bold" style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: 'var(--resume-accent-color)' }}>{headerContent.name}</h1>
                 ) : (
                     <Input
@@ -1042,29 +1066,29 @@ export default function BuilderPage() {
                 <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Mail className="h-4 w-4"/>
-                    {isPreviewing ? <p>{contactContent.email}</p> : <Input placeholder="Email Address" value={contactContent.email || ''} onChange={(e) => handleContentChange(contactSection.id, 'email', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
+                    {!isEditable ? <p>{contactContent.email}</p> : <Input placeholder="Email Address" value={contactContent.email || ''} onChange={(e) => handleContentChange(contactSection.id, 'email', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
                   </div>
                   <div className="flex items-center gap-1">
                     <Phone className="h-4 w-4"/>
-                    {isPreviewing ? <p>{contactContent.phone}</p> : <Input placeholder="Phone Number" value={contactContent.phone || ''} onChange={(e) => handleContentChange(contactSection.id, 'phone', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
+                    {!isEditable ? <p>{contactContent.phone}</p> : <Input placeholder="Phone Number" value={contactContent.phone || ''} onChange={(e) => handleContentChange(contactSection.id, 'phone', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
                   </div>
                    <div className="flex items-center gap-1">
                     <Github className="h-4 w-4"/>
-                    {isPreviewing ? <p>{githubItem?.username}</p> : <Input placeholder="github.com/your-profile" value={githubItem?.username || ''} onChange={(e) => handleListItemChange(socialsSection.id, socialItems.findIndex(i => i.id === githubItem?.id), 'username', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
+                    {!isEditable ? <p>{githubItem?.username}</p> : <Input placeholder="github.com/your-profile" value={githubItem?.username || ''} onChange={(e) => handleListItemChange(socialsSection.id, socialItems.findIndex(i => i.id === githubItem?.id), 'username', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
                   </div>
                    <div className="flex items-center gap-1">
                     <Linkedin className="h-4 w-4"/>
-                    {isPreviewing ? <p>{linkedinItem?.username}</p> : <Input placeholder="linkedin.com/in/your-profile" value={linkedinItem?.username || ''} onChange={(e) => handleListItemChange(socialsSection.id, socialItems.findIndex(i => i.id === linkedinItem?.id), 'username', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
+                    {!isEditable ? <p>{linkedinItem?.username}</p> : <Input placeholder="linkedin.com/in/your-profile" value={linkedinItem?.username || ''} onChange={(e) => handleListItemChange(socialsSection.id, socialItems.findIndex(i => i.id === linkedinItem?.id), 'username', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
                   </div>
                 </div>
               </header>
 
               <Separator className="bg-border/30" />
 
-              <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+              <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                   {resumeData.sections.filter(s => s.type !== 'header' && s.type !== 'contact' && s.type !== 'socials').map((section) => (
-                     <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                      {renderSectionComponent(section)}
+                     <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                      {renderSectionComponent(section, { isPublicView })}
                     </SortableResumeSection>
                   ))}
                 </SortableContext>
@@ -1080,11 +1104,12 @@ export default function BuilderPage() {
             const rightContent = resumeData.sections.filter(s => rightSections.includes(s.type));
             const headerSection = resumeData.sections.find(s => s.type === 'header');
             const headerContent = headerSection ? resumeData.content[headerSection.id] : {};
+            const isEditable = !isPreviewing && !isPublicView;
 
             return (
                 <div className='p-8'>
                     <header className="text-center mb-6">
-                        {isPreviewing ? (
+                        {!isEditable ? (
                             <>
                                 <h1 className="text-3xl font-bold" style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}>{headerContent.name}</h1>
                                 <p className="text-muted-foreground">{headerContent.tagline}</p>
@@ -1107,19 +1132,19 @@ export default function BuilderPage() {
                     </header>
                     <div className="flex gap-8">
                         <div className="w-[30%]">
-                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                                 {leftContent.map((section) => (
-                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                    {renderSectionComponent(section)}
+                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                    {renderSectionComponent(section, { isPublicView })}
                                     </SortableResumeSection>
                                 ))}
                             </SortableContext>
                         </div>
                         <div className="w-[70%]">
-                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                             {rightContent.map((section) => (
-                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                {renderSectionComponent(section)}
+                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                {renderSectionComponent(section, { isPublicView })}
                                 </SortableResumeSection>
                             ))}
                             </SortableContext>
@@ -1137,6 +1162,7 @@ export default function BuilderPage() {
             
             const leftContent = resumeData.sections.filter(s => leftSections.includes(s.type));
             const rightContent = resumeData.sections.filter(s => rightSections.includes(s.type));
+            const isEditable = !isPreviewing && !isPublicView;
 
             return (
                 <div className='p-8'>
@@ -1144,14 +1170,14 @@ export default function BuilderPage() {
                          {headerContent.showAvatar && (
                             <div className="relative group w-36 h-36 flex-shrink-0">
                                 <Image src={headerContent.avatar || 'https://placehold.co/144x144.png'} alt="Avatar" width={144} height={144} data-ai-hint="placeholder" className="rounded-full object-cover w-36 h-36 border-4" style={{borderColor: 'var(--resume-accent-color)'}}/>
-                                {!isPreviewing && <>
+                                {isEditable && <>
                                 <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"> <ImageIcon className="h-8 w-8" /> </label>
                                 <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                                 </>}
                             </div>
                         )}
                         <div>
-                             {isPreviewing ? (
+                             {!isEditable ? (
                                 <>
                                     <h1 className="text-5xl font-bold" style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}>{headerContent.name}</h1>
                                     <p className="text-2xl text-muted-foreground">{headerContent.tagline}</p>
@@ -1166,19 +1192,19 @@ export default function BuilderPage() {
                     </header>
                     <div className="flex gap-8">
                         <div className="w-[30%]">
-                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                                 {leftContent.map((section) => (
-                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                        {renderSectionComponent(section, { variant: 'creative' })}
+                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                        {renderSectionComponent(section, { variant: 'creative', isPublicView })}
                                     </SortableResumeSection>
                                 ))}
                             </SortableContext>
                         </div>
                         <div className="w-[70%]">
-                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                             {rightContent.map((section) => (
-                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                    {renderSectionComponent(section, { variant: 'creative' })}
+                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                    {renderSectionComponent(section, { variant: 'creative', isPublicView })}
                                 </SortableResumeSection>
                             ))}
                             </SortableContext>
@@ -1195,17 +1221,18 @@ export default function BuilderPage() {
              const contactContent = contactSection ? resumeData.content[contactSection.id] : {};
              const socialsSection = resumeData.sections.find(s => s.type === 'socials');
              const socialsContent = socialsSection ? resumeData.content[socialsSection.id] : {};
+             const isEditable = !isPreviewing && !isPublicView;
 
              return (
                  <div className="p-10 space-y-4">
                      <header className="text-center space-y-1">
-                         {isPreviewing ? (
+                         {!isEditable ? (
                             <h1 className="text-4xl font-bold" style={{fontFamily: 'var(--resume-font-headline, var(--font-headline))'}}>{headerContent.name}</h1>
                          ) : (
                             <Input value={headerContent.name || ''} onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)} className="text-4xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent" style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }} />
                          )}
                          <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-                             {isPreviewing ? (
+                             {!isEditable ? (
                                 <>
                                     <p>{contactContent.email}</p>
                                     <p>{contactContent.phone}</p>
@@ -1220,10 +1247,10 @@ export default function BuilderPage() {
                              )}
                          </div>
                      </header>
-                     <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                     <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                          {resumeData.sections.filter(s => !['header', 'contact', 'socials'].includes(s.type)).map((section) => (
-                             <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                 {renderSectionComponent(section, { titleClass: 'text-blue-700' })}
+                             <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                 {renderSectionComponent(section, { titleClass: 'text-blue-700', isPublicView })}
                              </SortableResumeSection>
                          ))}
                      </SortableContext>
@@ -1238,6 +1265,7 @@ export default function BuilderPage() {
             const rightContent = resumeData.sections.filter(s => rightSections.includes(s.type));
             const headerSection = resumeData.sections.find(s => s.type === 'header');
             const headerContent = headerSection ? resumeData.content[headerSection.id] : {};
+            const isEditable = !isPreviewing && !isPublicView;
 
             return (
                 <div className='flex h-full font-mono'>
@@ -1245,7 +1273,7 @@ export default function BuilderPage() {
                         {headerSection && 
                             <div className="mb-6 text-center">
                                 {headerContent.showAvatar && <Image src={headerContent.avatar || 'https://placehold.co/128x128.png'} alt="Avatar" width={128} height={128} data-ai-hint="placeholder" className="rounded-full object-cover w-32 h-32 mx-auto mb-4 border-2 border-primary" />}
-                                {isPreviewing ? (
+                                {!isEditable ? (
                                     <>
                                         <h1 className="text-2xl font-bold">{headerContent.name}</h1>
                                         <p className="text-muted-foreground">{headerContent.tagline}</p>
@@ -1258,19 +1286,19 @@ export default function BuilderPage() {
                                 )}
                             </div>
                         }
-                        <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                        <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                             {leftContent.map((section) => (
-                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                {renderSectionComponent(section)}
+                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                {renderSectionComponent(section, { isPublicView })}
                                 </SortableResumeSection>
                             ))}
                         </SortableContext>
                     </div>
                     <div className='w-[70%] p-6'>
-                         <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                         <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                             {rightContent.map((section) => (
-                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                {renderSectionComponent(section)}
+                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                {renderSectionComponent(section, { isPublicView })}
                                 </SortableResumeSection>
                             ))}
                         </SortableContext>
@@ -1280,12 +1308,13 @@ export default function BuilderPage() {
         }
 
         if (styling.template === 'minimal-cv') {
+             const isEditable = !isPreviewing && !isPublicView;
              return (
                  <div className="p-12">
-                     <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                     <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                          {resumeData.sections.map((section) => (
-                             <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                 {renderSectionComponent(section, { titleClass: 'text-2xl font-bold' })}
+                             <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                 {renderSectionComponent(section, { titleClass: 'text-2xl font-bold', isPublicView })}
                                  {!isPreviewing && <Separator className="my-6"/>}
                              </SortableResumeSection>
                          ))}
@@ -1304,6 +1333,7 @@ export default function BuilderPage() {
             
             const leftContent = resumeData.sections.filter(s => leftSections.includes(s.type));
             const rightContent = resumeData.sections.filter(s => rightSections.includes(s.type));
+            const isEditable = !isPreviewing && !isPublicView;
 
             return (
                 <div className='flex flex-col h-full'>
@@ -1318,7 +1348,7 @@ export default function BuilderPage() {
                                     data-ai-hint="placeholder"
                                     className="rounded-full object-cover w-36 h-36 border-4 border-current"
                                 />
-                                {!isPreviewing && <>
+                                {isEditable && <>
                                 <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                                     <ImageIcon className="h-8 w-8" />
                                 </label>
@@ -1327,7 +1357,7 @@ export default function BuilderPage() {
                             </div>
                         )}
                         <div className="flex-grow flex flex-col justify-center">
-                            {isPreviewing ? (
+                            {!isEditable ? (
                                 <>
                                     <h1 className="text-5xl font-bold text-left" style={{fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: 'var(--resume-accent-text-color)'}}>{headerContent.name}</h1>
                                     <p className="text-2xl opacity-80 text-left mt-2" style={{color: 'var(--resume-accent-text-color)'}}>{headerContent.tagline}</p>
@@ -1352,19 +1382,19 @@ export default function BuilderPage() {
                     </div>
                     <div className="h-[85%] flex bg-muted/30">
                         <div className="w-[30%] p-6">
-                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                                 {leftContent.map((section) => (
-                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                    {renderSectionComponent(section, { isAccentBg: false })}
+                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                    {renderSectionComponent(section, { isAccentBg: false, isPublicView })}
                                     </SortableResumeSection>
                                 ))}
                             </SortableContext>
                         </div>
                         <div className="w-[70%] p-6 bg-background">
-                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                             {rightContent.map((section) => (
-                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                {renderSectionComponent(section, { isAccentBg: false })}
+                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                {renderSectionComponent(section, { isAccentBg: false, isPublicView })}
                                 </SortableResumeSection>
                             ))}
                             </SortableContext>
@@ -1380,6 +1410,7 @@ export default function BuilderPage() {
 
             const leftContent = resumeData.sections.filter(s => leftSections.includes(s.type));
             const rightContent = resumeData.sections.filter(s => !leftSections.includes(s.type) && s.type !== 'line_break' && s.type !== 'subtitle' && s.type !== 'cover_letter');
+            const isEditable = !isPreviewing && !isPublicView;
             
             return (
                 <div className="flex h-full">
@@ -1388,20 +1419,20 @@ export default function BuilderPage() {
                              <div className="absolute inset-0 bg-repeat bg-center opacity-10" style={{backgroundImage: `url(${styling.accentPattern})`}}></div>
                         )}
                        <div className="relative">
-                           <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                           <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                               {leftContent.map((section) => (
-                                 <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                  {renderSectionComponent(section, { isAccentBg: true })}
+                                 <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                  {renderSectionComponent(section, { isAccentBg: true, isPublicView })}
                                 </SortableResumeSection>
                               ))}
                             </SortableContext>
                         </div>
                     </div>
                     <div className="w-[70%] p-6">
-                        <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                        <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                           {rightContent.map((section) => (
-                             <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                              {renderSectionComponent(section, { isAccentBg: false, titleClass: "text-[color:var(--resume-accent-color)]" })}
+                             <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                              {renderSectionComponent(section, { isAccentBg: false, titleClass: "text-[color:var(--resume-accent-color)]", isPublicView })}
                             </SortableResumeSection>
                           ))}
                         </SortableContext>
@@ -1417,24 +1448,25 @@ export default function BuilderPage() {
 
             const leftContent = resumeData.sections.filter(s => leftSections.includes(s.type));
             const rightContent = resumeData.sections.filter(s => rightSections.includes(s.type));
+            const isEditable = !isPreviewing && !isPublicView;
 
             return (
                 <div className="p-8">
                     <div className="flex gap-8">
                         <div className="w-[30%]">
-                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                                 {leftContent.map((section) => (
-                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                        {renderSectionComponent(section)}
+                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                        {renderSectionComponent(section, { isPublicView })}
                                     </SortableResumeSection>
                                 ))}
                             </SortableContext>
                         </div>
                         <div className="w-[70%]">
-                             <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                             <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                                 {rightContent.map((section) => (
-                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                        {renderSectionComponent(section)}
+                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                        {renderSectionComponent(section, { isPublicView })}
                                     </SortableResumeSection>
                                 ))}
                             </SortableContext>
@@ -1442,8 +1474,8 @@ export default function BuilderPage() {
                     </div>
                     {publicationsSection && (
                         <div className="mt-8">
-                             <SortableResumeSection key={publicationsSection.id} id={publicationsSection.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                {renderSectionComponent(publicationsSection)}
+                             <SortableResumeSection key={publicationsSection.id} id={publicationsSection.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                {renderSectionComponent(publicationsSection, { isPublicView })}
                             </SortableResumeSection>
                         </div>
                     )}
@@ -1460,40 +1492,41 @@ export default function BuilderPage() {
             const sidebarContent = resumeData.sections.filter(s => sidebarSections.includes(s.type));
             const mainContent = resumeData.sections.filter(s => mainSections.includes(s.type));
             const footerContent = resumeData.sections.filter(s => footerSections.includes(s.type));
+            const isEditable = !isPreviewing && !isPublicView;
 
 
             return (
                 <div className="p-8">
                     {headerSection && (
-                        <SortableResumeSection key={headerSection.id} id={headerSection.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                            {renderSectionComponent(headerSection)}
+                        <SortableResumeSection key={headerSection.id} id={headerSection.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                            {renderSectionComponent(headerSection, { isPublicView })}
                         </SortableResumeSection>
                     )}
                     <div className="flex flex-row-reverse gap-8 mt-8">
                         <aside className="w-[30%]">
-                             <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                             <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                                 {sidebarContent.map((section) => (
-                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                        {renderSectionComponent(section)}
+                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                        {renderSectionComponent(section, { isPublicView })}
                                     </SortableResumeSection>
                                 ))}
                             </SortableContext>
                         </aside>
                         <main className="w-[70%]">
-                             <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                             <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                                 {mainContent.map((section) => (
-                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                        {renderSectionComponent(section)}
+                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                        {renderSectionComponent(section, { isPublicView })}
                                     </SortableResumeSection>
                                 ))}
                             </SortableContext>
                         </main>
                     </div>
                      <footer className="mt-8 border-t pt-4">
-                        <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                        <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                             {footerContent.map((section) => (
-                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                                    {renderSectionComponent(section)}
+                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                                    {renderSectionComponent(section, { isPublicView })}
                                 </SortableResumeSection>
                             ))}
                         </SortableContext>
@@ -1503,12 +1536,13 @@ export default function BuilderPage() {
         }
 
         // Default template
+        const isEditable = !isPreviewing && !isPublicView;
         return (
             <div className="p-8">
-                <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy} disabled={!isEditable}>
                   {resumeData.sections.map((section) => (
-                     <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                      {renderSectionComponent(section)}
+                     <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={!isEditable}>
+                      {renderSectionComponent(section, { isPublicView })}
                     </SortableResumeSection>
                   ))}
                 </SortableContext>
@@ -1698,15 +1732,31 @@ export default function BuilderPage() {
                       Share
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
+                  <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                       <DialogTitle>Share Your Resume</DialogTitle>
+                       <DialogDescription>
+                            Anyone with this link will be able to view your resume. Make sure to publish it first.
+                        </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="publish-switch"
+                            checked={resumeData.isPublished}
+                            onCheckedChange={handlePublishChange}
+                          />
+                          <Label htmlFor="publish-switch">
+                            {resumeData.isPublished ? 'Published' : 'Unpublished'}
+                          </Label>
+                        </div>
                         <Label htmlFor="share-link">Shareable Link</Label>
                         <div className="flex gap-2">
-                            <Input id="share-link" defaultValue={`https://launchboard.dev/share/${resumeId}`} readOnly />
-                            <Button onClick={() => navigator.clipboard.writeText(`https://launchboard.dev/share/${resumeId}`)}>
+                            <Input id="share-link" defaultValue={`${window.location.origin}/share/${resumeId}`} readOnly />
+                            <Button onClick={() => {
+                                navigator.clipboard.writeText(`${window.location.origin}/share/${resumeId}`);
+                                toast({ title: "Copied to clipboard!" });
+                            }}>
                                 <Copy className="h-4 w-4"/>
                             </Button>
                         </div>

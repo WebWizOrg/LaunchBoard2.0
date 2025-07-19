@@ -50,7 +50,7 @@ export function SiteHeader() {
     { name: "Dashboard", href: "/dashboard" },
   ]
 
-  if (pathname.startsWith('/login') || pathname.startsWith('/signup')) {
+  if (pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/share')) {
       return null;
   }
   
