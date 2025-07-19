@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { defaultResumeData } from '@/app/builder/page';
 
 // This component fetches and renders the actual resume content
 function ReadOnlyResume({ resumeId }: { resumeId: string }) {
@@ -28,8 +29,9 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
         if (docSnap.exists() && docSnap.data().isPublished) {
           const data = docSnap.data();
           setResumeData({
+            ...defaultResumeData,
             ...data,
-            styling: { ...data.styling, backgroundBlur: 0 },
+            styling: { ...defaultResumeData.styling, ...data.styling, backgroundBlur: 0 },
           });
         } else {
           setResumeData(null); // Will trigger notFound()
@@ -88,6 +90,13 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
 
   // Mock 'this' context for calling prototype methods from the builder component.
   const mockBuilderInstance = {
+    props: {
+      resumeData,
+    },
+    state: {
+        isPreviewing: true,
+        theme: theme || 'light',
+    },
     resumeData,
     styling,
     isPreviewing: true,
@@ -125,7 +134,6 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
 // This remains the default export for the route
 export default function SharePage({ params }: { params: { id: string } }) {
   // The 'id' is destructured here and passed as a plain string prop to the client component.
-  // This avoids the deprecated direct access in the child component.
   const { id } = params;
 
   return (
