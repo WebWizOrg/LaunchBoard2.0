@@ -25,14 +25,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { AiResumeDemo } from '@/components/ai-resume-demo';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel';
 import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   const { user } = useAuth();
@@ -129,13 +123,11 @@ export default function Home() {
                 Browse our professionally designed templates.
               </p>
             </div>
-            <div className="mt-12">
-              <Carousel opts={{ align: "start", loop: true, }} className="w-full">
-                <CarouselContent>
-                  {templates.map((template, index) => (
-                    <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                      <div className="p-1">
-                        <Card className="overflow-hidden group">
+             <div className="mt-12 w-full inline-flex flex-nowrap overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-200px),transparent_100%)]">
+              <ul className="flex items-center justify-center md:justify-start [&_li]:mx-4 [&_img]:max-w-none animate-infinite-scroll">
+                {templates.map((template, index) => (
+                    <li key={`${template.id}-${index}`}>
+                       <Card className="overflow-hidden group w-[300px] h-auto">
                           <CardContent className="p-0">
                             <Image
                               src={template.image}
@@ -150,13 +142,30 @@ export default function Home() {
                             <h3 className="font-semibold">{template.name}</h3>
                           </CardFooter>
                         </Card>
-                      </div>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious className="hidden sm:flex" />
-                <CarouselNext className="hidden sm:flex" />
-              </Carousel>
+                    </li>
+                ))}
+              </ul>
+              <ul className="flex items-center justify-center md:justify-start [&_li]:mx-4 [&_img]:max-w-none animate-infinite-scroll" aria-hidden="true">
+                 {templates.map((template, index) => (
+                    <li key={`${template.id}-b-${index}`}>
+                       <Card className="overflow-hidden group w-[300px] h-auto">
+                          <CardContent className="p-0">
+                            <Image
+                              src={template.image}
+                              alt={template.name}
+                              width={400}
+                              height={566}
+                              data-ai-hint={template.hint}
+                              className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          </CardContent>
+                          <CardFooter className="p-4 bg-card/80 backdrop-blur-sm">
+                            <h3 className="font-semibold">{template.name}</h3>
+                          </CardFooter>
+                        </Card>
+                    </li>
+                ))}
+              </ul>
             </div>
              <div className="text-center mt-12">
                 <Button size="lg" variant="outline" disabled={!user}>
