@@ -13,10 +13,10 @@ export function SiteHeader() {
   const navLinks = [
     { name: "Builder", href: "/builder" },
     { name: "Marketplace", href: "/#marketplace" },
-    { name: "Testimonials", href: "/#testimonials" },
+    { name: "Dashboard", href: "/dashboard" },
   ]
   // In a real app, you'd get this from a session provider
-  const isLoggedIn = false 
+  const isLoggedIn = true;
 
   if (pathname.startsWith('/login') || pathname.startsWith('/signup')) {
       return null;
@@ -77,6 +77,7 @@ export function SiteHeader() {
           
           <div className="flex items-center gap-2">
             {isLoggedIn ? (
+               pathname.startsWith('/builder') ? null :
               <Link href="/dashboard" className={cn(buttonVariants({ variant: "default" }))}>
                 Dashboard
               </Link>

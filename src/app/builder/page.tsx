@@ -1,5 +1,3 @@
-
-
 // src/app/builder/page.tsx
 'use client';
 
@@ -574,17 +572,17 @@ export default function BuilderPage() {
         }
 
         const TitleComponent = ({value, icon: Icon, className, ...props}) => {
-            const { titleClass, ...restProps} = props;
+            const { titleClass: propTitleClass, ...restProps } = props; // Extract titleClass to avoid passing to DOM
             return (
                 <div className="flex items-center gap-3 mb-2">
                     {Icon && <Icon className="h-6 w-6" style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }} />}
                     {isPreviewing ? (
-                        <div className={cn("text-xl font-bold w-full", titleClass, className)} {...restProps}>{value}</div>
+                        <div className={cn("text-xl font-bold w-full", propTitleClass, className)} {...restProps}>{value}</div>
                     ) : (
                         <Input 
                             value={value || ''} 
                             onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} 
-                            className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", titleClass, className)} 
+                            className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", propTitleClass, className)} 
                             style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)', ...restProps.style }}
                         />
                     )}
