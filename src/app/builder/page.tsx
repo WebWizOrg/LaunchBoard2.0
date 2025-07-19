@@ -1,3 +1,4 @@
+
 // src/app/builder/page.tsx
 'use client';
 
@@ -70,7 +71,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { debounce } from 'lodash';
 
 
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -1729,7 +1730,7 @@ export default function BuilderPage() {
                   <div>
                       <h3 className="mb-4 text-lg font-semibold">Background Image</h3>
                       <div className="space-y-2">
-                        <Label htmlFor="pdf-template-upload" className={cn(Button.prototype.constructor({ variant: 'outline'}), "w-full cursor-pointer")}>
+                        <Label htmlFor="pdf-template-upload" className={cn(buttonVariants({ variant: 'outline'}), "w-full cursor-pointer")}>
                             {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
                             Upload PDF Template
                         </Label>
