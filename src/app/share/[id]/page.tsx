@@ -1,7 +1,7 @@
 // src/app/share/[id]/page.tsx
 'use client';
 
-import { useEffect, useState, ComponentType } from 'react';
+import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 import { doc, getDoc, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -50,11 +50,14 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
     // This dynamic import is a workaround to use builder page's render logic
     // without creating circular dependencies or restructuring the entire project.
     import('@/app/builder/page').then(mod => {
-        setBuilderModule({
-            renderTemplate: mod.default.prototype.renderTemplate,
-            renderSectionComponent: mod.default.prototype.renderSectionComponent
-        });
-    });
+        // We need to access the prototype of the default export if it's a class component
+        if (mod.default && mod.default.prototype && mod.default.prototype.renderTemplate) {
+             setBuilderModule({
+                renderTemplate: mod.default.prototype.renderTemplate,
+                renderSectionComponent: mod.default.prototype.renderSectionComponent
+            });
+        }
+    }).catch(err => console.error("Failed to load builder module", err));
   }, []);
 
   if (loading || !builderModule) {
@@ -89,37 +92,37 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
   };
 
   // Mock 'this' context for calling prototype methods from the builder component.
+  // This is a complex workaround because we can't instantiate the builder page class directly here.
   const mockBuilderInstance = {
-    props: {
+      props: { resumeData },
+      state: { isPreviewing: true, theme: theme || 'light' },
       resumeData,
-    },
-    state: {
-        isPreviewing: true,
-        theme: theme || 'light',
-    },
-    resumeData,
-    styling,
-    isPreviewing: true,
-    theme: theme || 'light',
-    renderSectionComponent: function(section: any, templateContext: any) {
-        const mockSectionRenderThis = {
-            props: {},
-            state: { resumeData, isPreviewing: true },
-            handleContentChange: () => {},
-            handleListItemChange: () => {},
-            addListItem: () => {},
-            removeListItem: () => {},
-            handleAvatarUpload: () => {},
-            handleImageUpload: () => {},
-            cn
+      styling,
+      isPreviewing: true,
+      theme: theme || 'light',
+      renderTemplate: function(isPublicView = false) {
+          if (!builderModule.renderTemplate) return null;
+          // 'this' is bound to mockBuilderInstance
+          return builderModule.renderTemplate.call(this, isPublicView);
+      },
+      renderSectionComponent: (section: any, templateContext = {}) => {
+        if (!builderModule.renderSectionComponent) return null;
+        const mockedThis = {
+          props: {},
+          state: {},
+          handleContentChange: () => {},
+          handleListItemChange: () => {},
+          addListItem: () => {},
+          removeListItem: () => {},
+          handleAvatarUpload: () => {},
+          handleImageUpload: () => {},
+          cn,
+          resumeData,
         };
-        // The page module's default export is a class, so we use its prototype
-        return builderModule.renderSectionComponent.call(mockSectionRenderThis, section, { ...templateContext, isPublicView: true });
-    },
-    renderTemplate: function(isPublicView = false) {
-        return builderModule.renderTemplate.call(this, isPublicView);
-    }
+        return builderModule.renderSectionComponent.call(mockedThis, section, { ...templateContext, isPublicView: true });
+      }
   };
+
 
   return (
     <div className="w-full max-w-4xl mx-auto shadow-2xl rounded-lg overflow-hidden bg-background" style={resumeStyle}>
@@ -133,12 +136,9 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
 
 // This remains the default export for the route
 export default function SharePage({ params }: { params: { id: string } }) {
-  // The 'id' is destructured here and passed as a plain string prop to the client component.
-  const { id } = params;
-
   return (
     <div className="flex justify-center items-center min-h-screen bg-muted/40 p-4 sm:p-8">
-      <ReadOnlyResume resumeId={id} />
+      <ReadOnlyResume resumeId={params.id} />
     </div>
   );
 }
