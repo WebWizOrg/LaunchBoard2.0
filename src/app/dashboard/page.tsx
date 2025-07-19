@@ -149,6 +149,12 @@ export default function Dashboard() {
       return;
     };
     
+    const sortDocs = (a, b) => {
+        const timeA = a.updatedAt?.toMillis() || 0;
+        const timeB = b.updatedAt?.toMillis() || 0;
+        return timeB - timeA;
+    };
+
     const resumesQuery = query(collection(db, `users/${user.uid}/resumes`), orderBy('updatedAt', 'desc'));
     const portfoliosQuery = query(collection(db, `users/${user.uid}/portfolios`), orderBy('updatedAt', 'desc'));
 
@@ -156,7 +162,7 @@ export default function Dashboard() {
         const resumesData = querySnapshot.docs.map(doc => ({ id: doc.id, type: 'resume', ...doc.data() }));
         setDocuments(prev => {
             const otherDocs = prev.filter(d => d.type !== 'resume');
-            const allDocs = [...resumesData, ...otherDocs].sort((a,b) => b.updatedAt.toMillis() - a.updatedAt.toMillis());
+            const allDocs = [...resumesData, ...otherDocs].sort(sortDocs);
             updateAnalytics(allDocs);
             return allDocs;
         });
@@ -167,7 +173,7 @@ export default function Dashboard() {
         const portfoliosData = querySnapshot.docs.map(doc => ({ id: doc.id, type: 'portfolio', ...doc.data() }));
         setDocuments(prev => {
             const otherDocs = prev.filter(d => d.type !== 'portfolio');
-            const allDocs = [...portfoliosData, ...otherDocs].sort((a,b) => b.updatedAt.toMillis() - a.updatedAt.toMillis());
+            const allDocs = [...portfoliosData, ...otherDocs].sort(sortDocs);
             updateAnalytics(allDocs);
             return allDocs;
         });
