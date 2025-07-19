@@ -214,6 +214,7 @@ export default function PortfolioBuilderPage() {
   const router = useRouter();
   const portfolioId = searchParams.get('id');
   const { user } = useAuth();
+  const { toast } = useToast();
   
   const [saveStatus, setSaveStatus] = useState('Saved');
   const [activeId, setActiveId] = useState(null);
@@ -221,6 +222,7 @@ export default function PortfolioBuilderPage() {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   
   const [portfolioData, setPortfolioData] = useState<DocumentData | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor));
 
   const debouncedSave = useCallback(
     debounce((dataToSave) => {
@@ -244,11 +246,11 @@ export default function PortfolioBuilderPage() {
   }, [portfolioData, debouncedSave, isDataLoaded]);
 
   useEffect(() => {
+    if (!user) return;
     if (!portfolioId) {
-        if(user) router.push('/dashboard');
+        router.push('/dashboard');
         return;
     }
-    if (!user) return;
 
     const portfolioRef = doc(db, 'users', user.uid, 'portfolios', portfolioId);
     
@@ -270,6 +272,13 @@ export default function PortfolioBuilderPage() {
     return () => unsubscribe();
   }, [user, portfolioId, router]);
 
+  if (!isDataLoaded || !portfolioData) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-muted">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   const updatePortfolioData = (updater) => {
     setPortfolioData(prev => {
@@ -365,8 +374,6 @@ export default function PortfolioBuilderPage() {
     });
   };
 
-  const { toast } = useToast();
-  
   const handlePublishChange = async (isPublished: boolean) => {
     if (!portfolioId || !portfolioData) return;
     updatePortfolioData(prev => ({ ...prev, isPublished }));
@@ -462,17 +469,8 @@ export default function PortfolioBuilderPage() {
         );
     }
   };
-
-  if (!isDataLoaded || !portfolioData) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-muted">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
+  
   const portfolioSectionsIds = portfolioData?.sections.map(s => s.id) || [];
-  const sensors = useSensors(useSensor(PointerSensor));
   const styling = portfolioData?.styling || defaultPortfolioData.styling;
 
   const portfolioStyle = {
