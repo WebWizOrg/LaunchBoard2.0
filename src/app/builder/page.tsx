@@ -1,4 +1,5 @@
 
+
 // src/app/builder/page.tsx
 'use client';
 
@@ -137,7 +138,6 @@ const allSectionsMap = new Map(
 );
 
 const templates = [
-  { name: 'Minimalist', id: 'minimalist', image: 'https://placehold.co/150x212.png', hint: 'minimalist resume' },
   { name: 'Horizontal Split', id: 'horizontal-split', image: 'https://placehold.co/150x212.png', hint: 'resume template' },
   { name: 'Vertical Split', id: 'vertical-split', image: 'https://placehold.co/150x212.png', hint: 'modern resume' },
   { name: 'Classic', id: 'classic', image: 'https://placehold.co/150x212.png', hint: 'classic resume' },
@@ -992,7 +992,7 @@ export default function BuilderPage() {
             const rightSections = ['experience', 'education', 'projects', 'publications', 'achievements', 'recommendations'];
             
             const leftContent = resumeData.sections.filter(s => leftSections.includes(s.type));
-            const rightContent = resumeData.sections.filter(s => rightSections includes(s.type));
+            const rightContent = resumeData.sections.filter(s => rightSections.includes(s.type));
 
             return (
                 <div className='flex flex-col h-full'>
@@ -1347,5 +1347,3 @@ export default function BuilderPage() {
     </ClientOnly>
   );
 }
-
-    
