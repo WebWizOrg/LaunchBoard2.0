@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { defaultResumeData } from '@/app/builder/page';
+import { Progress } from '@/components/ui/progress';
 import {
   Award,
   Book,
@@ -26,7 +27,6 @@ import {
   MapPin,
   Minus,
   Phone,
-  Progress,
   Quote,
   Separator,
   Share,
