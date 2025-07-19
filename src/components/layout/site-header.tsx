@@ -19,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, query, orderBy, limit, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export function SiteHeader() {
@@ -45,7 +45,7 @@ export function SiteHeader() {
         const portfolioQuery = query(collection(db, `users/${user.uid}/portfolios`), orderBy("updatedAt", "desc"), limit(1));
         const portfolioSnapshot = await getDocs(portfolioQuery);
         if (!portfolioSnapshot.empty) {
-          setLastPortfolioId(portfolioSnapshot.docs[0].id);
+            setLastPortfolioId(portfolioSnapshot.docs[0].id);
         } else {
             setLastPortfolioId(null);
         }
@@ -55,11 +55,40 @@ export function SiteHeader() {
   }, [user, loading, pathname]); // Re-check when path changes to update active doc
 
   const resumeBuilderHref = lastResumeId ? `/builder?id=${lastResumeId}` : '/dashboard';
-  const portfolioBuilderHref = lastPortfolioId ? `/portfolio/builder?id=${lastPortfolioId}` : '/dashboard';
+  
+  // Custom navigation handler for portfolio builder
+  const handlePortfolioBuilderClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) {
+        router.push('/login');
+        return;
+    }
+
+    if (lastPortfolioId) {
+        router.push(`/portfolio/builder?id=${lastPortfolioId}`);
+    } else {
+        // Create a new portfolio and then navigate
+        try {
+            const collectionRef = collection(db, `users/${user.uid}/portfolios`);
+            const newDocRef = await addDoc(collectionRef, {
+                name: 'My First Portfolio',
+                isPublished: false,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+            router.push(`/portfolio/builder?id=${newDocRef.id}`);
+        } catch (error) {
+            console.error("Error creating new portfolio:", error);
+            // Fallback to dashboard if creation fails
+            router.push('/dashboard');
+        }
+    }
+  };
+
 
   const navLinks = [
     { name: "Resume Builder", href: resumeBuilderHref },
-    { name: "Portfolio Builder", href: portfolioBuilderHref },
+    { name: "Portfolio Builder", href: "/portfolio/builder", onClick: handlePortfolioBuilderClick },
     { name: "Marketplace", href: "/#marketplace" },
     { name: "Dashboard", href: "/dashboard" },
   ]
@@ -88,6 +117,7 @@ export function SiteHeader() {
               <Link
                 key={link.name}
                 href={link.href}
+                onClick={link.onClick}
                 className="transition-colors hover:text-foreground/80 text-foreground/60"
               >
                 {link.name}
@@ -120,6 +150,7 @@ export function SiteHeader() {
                               <Link
                                 key={link.name}
                                 href={link.href}
+                                onClick={link.onClick}
                                 className="text-muted-foreground transition-colors hover:text-foreground"
                               >
                                   {link.name}
