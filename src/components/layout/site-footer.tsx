@@ -1,13 +1,15 @@
+
 "use client";
 
 import Link from "next/link";
 import { Rocket, Twitter, Github, Linkedin } from "lucide-react";
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 
 
 export function SiteFooter() {
   const pathname = usePathname();
-  if (pathname.startsWith('/builder')) {
+  if (pathname.startsWith('/builder') || pathname.startsWith('/portfolio/builder')) {
     return null;
   }
   
@@ -17,8 +19,7 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="flex flex-col items-start">
             <Link href="/" className="flex items-center space-x-2 mb-4">
-              <Rocket className="h-6 w-6 text-primary" />
-              <span className="font-bold text-lg font-headline">LAUNCHBOARD</span>
+               <Image src="/logo.png" alt="Launchboard Logo" width={150} height={40} className="dark:invert"/>
             </Link>
             <p className="text-sm text-muted-foreground">Build. Share. Get Hired.</p>
           </div>

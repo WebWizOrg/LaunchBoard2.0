@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -8,6 +9,7 @@ import { z } from 'zod';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from "@/hooks/use-toast";
 import React from "react";
+import Image from 'next/image';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -94,7 +96,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="space-y-1 text-center">
             <Link href="/" className="inline-block mx-auto">
-                <Rocket className="h-8 w-8 text-primary" />
+                <Image src="/logo.png" alt="Launchboard Logo" width={180} height={48} className="dark:invert"/>
             </Link>
           <CardTitle className="text-2xl font-headline">Welcome Back</CardTitle>
           <CardDescription>

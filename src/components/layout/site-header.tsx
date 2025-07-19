@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import Image from 'next/image';
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -92,8 +93,7 @@ export function SiteHeader() {
                       <SheetDescription className="sr-only">Main navigation links for the site.</SheetDescription>
                     </SheetHeader>
                     <Link href="/" className="flex items-center space-x-2 mb-6">
-                      <Rocket className="h-6 w-6 text-primary" />
-                      <span className="font-bold font-headline">LAUNCHBOARD</span>
+                      <Image src="/logo.png" alt="Launchboard Logo" width={150} height={40} className="dark:invert"/>
                     </Link>
                     <nav className="flex flex-col space-y-3">
                         {navLinks.map(link => (
@@ -115,10 +115,7 @@ export function SiteHeader() {
             {/* Left: Logo */}
             <div className="flex-1 flex justify-start">
                 <Link href="/" className="flex items-center space-x-2">
-                    <Rocket className="h-6 w-6 text-primary" />
-                    <span className="font-bold sm:inline-block font-headline">
-                    LAUNCHBOARD
-                    </span>
+                    <Image src="/logo.png" alt="Launchboard Logo" width={150} height={40} className="dark:invert"/>
                 </Link>
             </div>
 
@@ -189,10 +186,7 @@ export function SiteHeader() {
         {/* Mobile: Logo centered when nav is open, Auth buttons on the right */}
         <div className="flex flex-1 justify-end items-center md:hidden">
             <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-2">
-                <Rocket className="h-6 w-6 text-primary" />
-                <span className="font-bold sm:inline-block font-headline">
-                    LAUNCHBOARD
-                </span>
+                 <Image src="/logo.png" alt="Launchboard Logo" width={150} height={40} className="dark:invert"/>
             </Link>
             <div className="flex items-center gap-2">
                 {!loading && !user && <ThemeToggle />}
