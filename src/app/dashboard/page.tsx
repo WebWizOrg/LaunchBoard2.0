@@ -216,7 +216,8 @@ export default function Dashboard() {
       const collectionName = type === 'resume' ? 'resumes' : 'portfolios';
       const publishedCollectionName = type === 'resume' ? 'publishedResumes' : 'publishedPortfolios';
       await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, docId));
-      await deleteDoc(doc(db, publishedCollectionName, docId));
+      // Attempt to delete from published collection, will not throw error if it doesn't exist.
+      await deleteDoc(doc(db, publishedCollectionName, docId)).catch(() => {});
       toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully` });
     } catch (error) {
       console.error(`Error deleting ${type}: `, error);
