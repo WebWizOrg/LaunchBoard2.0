@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Rocket, LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
@@ -93,6 +93,10 @@ export function SiteHeader() {
                       </Button>
                   </SheetTrigger>
                   <SheetContent side="left">
+                      <SheetHeader className="sr-only">
+                        <SheetTitle>Mobile Navigation</SheetTitle>
+                        <SheetDescription>Main navigation links for the site.</SheetDescription>
+                      </SheetHeader>
                       <Link href="/" className="flex items-center space-x-2 mb-6">
                         <Rocket className="h-6 w-6 text-primary" />
                         <span className="font-bold font-headline">LAUNCHBOARD</span>
