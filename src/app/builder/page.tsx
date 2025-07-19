@@ -1,7 +1,7 @@
 // src/app/builder/page.tsx
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -34,7 +34,7 @@ import {
   Languages,
   Loader2,
   Link as LinkIcon,
-  Map as MapIcon,
+  MapPin,
   Palette,
   QrCode,
   Save,
@@ -68,6 +68,21 @@ import { Label } from '@/components/ui/label';
 import { getAiPoweredResumeRecommendations } from '@/ai/flows/smart-recommendations';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+
+// Wrapper to prevent hydration errors with dnd-kit
+function ClientOnly({ children }: { children: React.ReactNode }) {
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  if (!hasMounted) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
 
 const initialSections = {
   Standard: [
@@ -181,25 +196,27 @@ export default function BuilderPage() {
     setActiveId(null);
     if (!over) return;
 
-    if (over.id === 'resume-canvas' || over.id === 'resume-canvas-container' || over.id.startsWith('section-')) {
-        const overId = over.id.startsWith('section-') ? over.id.substring(8) : over.id;
-        if (!resumeSections.includes(active.id)) {
-            const overIndex = resumeSections.indexOf(overId);
-            if(overIndex !== -1) {
-                setResumeSections((items) => {
-                    const newItems = [...items];
-                    newItems.splice(overIndex + 1, 0, active.id);
-                    return newItems;
-                });
-            } else {
-                 setResumeSections((sections) => [...sections, active.id]);
-            }
+    // Check if dragging from sidebar to canvas
+    const isSidebarItem = allSectionsMap.has(active.id);
+    const isOverCanvas = over.id === 'resume-canvas-container' || over.id === 'resume-canvas' || resumeSections.includes(over.id);
+
+    if (isSidebarItem && isOverCanvas && !resumeSections.includes(active.id)) {
+        const overIndex = over.id ? resumeSections.indexOf(over.id as string) : -1;
+        if (overIndex !== -1) {
+            setResumeSections((items) => {
+                const newItems = [...items];
+                newItems.splice(overIndex + 1, 0, active.id as string);
+                return newItems;
+            });
+        } else {
+            setResumeSections((items) => [...items, active.id as string]);
         }
     } else {
-        const activeIndex = resumeSections.indexOf(active.id);
-        const overIndex = resumeSections.indexOf(over.id);
+        // Reordering within the canvas
+        const activeIndex = resumeSections.indexOf(active.id as string);
+        const overIndex = resumeSections.indexOf(over.id as string);
 
-        if (activeIndex !== overIndex) {
+        if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
             setResumeSections((items) => arrayMove(items, activeIndex, overIndex));
         }
     }
@@ -269,14 +286,14 @@ export default function BuilderPage() {
         return (
           <div>
             <h2 className="text-xl font-bold font-headline mb-2 border-b-2 border-primary inline-block">Summary</h2>
-            <Textarea placeholder="Write a powerful summary to grab attention..." className="bg-transparent" />
+            <Textarea placeholder="Write a powerful summary to grab attention..." className="bg-transparent border-0 focus-visible:ring-0 p-0" />
           </div>
         );
       case 'experience':
         return (
           <div className="mt-6">
             <h2 className="text-xl font-bold font-headline mb-2 border-b-2 border-primary inline-block">Experience</h2>
-            <Textarea placeholder="Detail your professional experience..." className="bg-transparent"/>
+            <Textarea placeholder="Detail your professional experience..." className="bg-transparent border-0 focus-visible:ring-0 p-0"/>
           </div>
         );
       default:
@@ -296,6 +313,7 @@ export default function BuilderPage() {
   };
 
   return (
+    <ClientOnly>
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <TooltipProvider>
         <div className="flex h-screen bg-muted/40" style={{ fontFamily: activeFont }}>
@@ -310,7 +328,7 @@ export default function BuilderPage() {
               <ScrollArea className="flex-1">
                 <TabsContent value="content" className="p-4">
                   <h3 className="mb-4 text-lg font-semibold">Resume Sections</h3>
-                  <SortableContext items={[...initialSections.Standard, ...initialSections.Advanced].map(s => s.id)} strategy={verticalListSortingStrategy}>
+                   <SortableContext items={[...initialSections.Standard, ...initialSections.Advanced].map(s => s.id)} strategy={verticalListSortingStrategy}>
                     <div className="space-y-2">
                       <h4 className="font-medium text-sm text-muted-foreground">Standard</h4>
                       {initialSections.Standard.map((block) => (
@@ -447,11 +465,13 @@ export default function BuilderPage() {
           </main>
           <DragOverlay>
             {activeId && allSectionsMap.get(activeId) ? (
-              <DraggableSection
-                id={activeId}
-                name={allSectionsMap.get(activeId).name}
-                icon={allSectionsMap.get(activeId).icon}
-              />
+              <Card
+                className='flex items-center p-2 cursor-grabbing opacity-80'
+              >
+                <GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />
+                {React.cloneElement(allSectionsMap.get(activeId).icon, { className: 'h-5 w-5 mr-3 text-primary' })}
+                <span className="text-sm font-medium">{allSectionsMap.get(activeId).name}</span>
+              </Card>
             ) : null}
           </DragOverlay>
 
@@ -478,5 +498,6 @@ export default function BuilderPage() {
         </div>
       </TooltipProvider>
     </DndContext>
+    </ClientOnly>
   );
 }
