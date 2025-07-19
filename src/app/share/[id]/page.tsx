@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { Loader2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
 
 // This component fetches and renders the actual resume content
 function ReadOnlyResume({ resumeId }: { resumeId: string }) {
@@ -44,12 +45,17 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
   }, [resumeId]);
   
   useEffect(() => {
+    // This dynamic import is a workaround to use builder page's render logic
+    // without creating circular dependencies or restructuring the entire project.
     import('@/app/builder/page').then(mod => {
-        setBuilderModule(mod);
+        setBuilderModule({
+            renderTemplate: mod.default.prototype.renderTemplate,
+            renderSectionComponent: mod.default.prototype.renderSectionComponent
+        });
     });
   }, []);
 
-  if (loading) {
+  if (loading || !builderModule) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -60,17 +66,9 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
   if (!resumeData) {
     return notFound();
   }
-  
-  if (!builderModule) {
-      return (
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      );
-  }
 
   const styling = resumeData.styling || {};
-  const resumeStyle = {
+  const resumeStyle: React.CSSProperties = {
     '--resume-accent-color': styling.accentColor,
     '--resume-accent-text-color': styling.accentTextColor,
     '--resume-background': theme === 'dark' ? styling.backgroundColorDark : styling.backgroundColorLight,
@@ -78,56 +76,47 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
     fontFamily: styling.fontFamily,
     backgroundColor: 'var(--resume-background)',
     color: 'var(--resume-foreground)',
+    aspectRatio: '1 / 1.4142'
   };
 
-  const resumeBgStyle = {
+  const resumeBgStyle: React.CSSProperties = {
     backgroundImage: styling.backgroundImage ? `url(${styling.backgroundImage})` : 'none',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     filter: `brightness(${styling.backgroundBrightness}%)`,
   };
 
-  const OriginalBuilder = builderModule.default;
-  const builderProto = OriginalBuilder.prototype;
-  
-  // This is a workaround to call the class method from the builder component instance
-  // without having to instantiate the class here. We create a mock context for it.
-  const renderSectionComponent = (section, templateContext) => {
-    const mockThis = {
-        state: { 
-            resumeData, 
-            isPreviewing: true, 
-            theme: theme || 'light' 
-        },
-        props: {}, // Not needed for this method
-        // Mock any methods it might call to prevent errors
-        handleContentChange: () => {},
-        handleListItemChange: () => {},
-        addListItem: () => {},
-        removeListItem: () => {},
-        handleAvatarUpload: () => {},
-        handleImageUpload: () => {},
-    };
-
-    return builderProto.renderSectionComponent.call(mockThis, section, { ...templateContext, isPublicView: true });
-  }
-
-  const renderTemplate = (isPublicView = false) => {
-      const mockThis = {
-          styling,
-          resumeData,
-          isPreviewing: true,
-          renderSectionComponent,
-      };
-      return builderProto.renderTemplate.call(mockThis, isPublicView);
-  }
-
+  // Mock 'this' context for calling prototype methods from the builder component.
+  const mockBuilderInstance = {
+    resumeData,
+    styling,
+    isPreviewing: true,
+    theme: theme || 'light',
+    renderSectionComponent: function(section: any, templateContext: any) {
+        const mockSectionRenderThis = {
+            props: {},
+            state: { resumeData, isPreviewing: true },
+            handleContentChange: () => {},
+            handleListItemChange: () => {},
+            addListItem: () => {},
+            removeListItem: () => {},
+            handleAvatarUpload: () => {},
+            handleImageUpload: () => {},
+            cn
+        };
+        // The page module's default export is a class, so we use its prototype
+        return builderModule.renderSectionComponent.call(mockSectionRenderThis, section, { ...templateContext, isPublicView: true });
+    },
+    renderTemplate: function(isPublicView = false) {
+        return builderModule.renderTemplate.call(this, isPublicView);
+    }
+  };
 
   return (
-    <div className="w-full max-w-4xl mx-auto shadow-2xl rounded-lg overflow-hidden bg-background" style={{ ...resumeStyle, aspectRatio: '1 / 1.4142' }}>
+    <div className="w-full max-w-4xl mx-auto shadow-2xl rounded-lg overflow-hidden bg-background" style={resumeStyle}>
       <div className="absolute inset-0 transition-all" style={resumeBgStyle}></div>
       <div className="relative h-full w-full">
-        {renderTemplate(true)}
+        {mockBuilderInstance.renderTemplate(true)}
       </div>
     </div>
   );
@@ -135,6 +124,8 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
 
 // This remains the default export for the route
 export default function SharePage({ params }: { params: { id: string } }) {
+  // The 'id' is destructured here and passed as a plain string prop to the client component.
+  // This avoids the deprecated direct access in the child component.
   const { id } = params;
 
   return (
