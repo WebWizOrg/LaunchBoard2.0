@@ -10,6 +10,7 @@ import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { defaultResumeData } from '@/app/builder/page';
 import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 import {
   Award,
   Book,
@@ -28,7 +29,6 @@ import {
   Minus,
   Phone,
   Quote,
-  Separator,
   Share,
   Sparkles,
   Star,
