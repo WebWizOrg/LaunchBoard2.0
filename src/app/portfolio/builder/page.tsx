@@ -188,7 +188,7 @@ const createNewItem = (itemType) => {
     }
 };
 
-const defaultPortfolioData = {
+export const defaultPortfolioData = {
   name: 'Untitled Portfolio',
   isPublished: false,
   sections: [
