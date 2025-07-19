@@ -36,6 +36,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import { BeforeAfterSlider } from '@/components/before-after-slider';
 
 export default function Home() {
   const { user } = useAuth();
@@ -156,8 +157,53 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Watermark Showcase Section */}
+        <section id="watermark" className="py-16 md:py-24 bg-background">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="text-center">
+              <h2 className="text-3xl md:text-4xl font-bold font-headline">
+                Protect Your Work with Watermarks
+              </h2>
+              <p className="max-w-2xl mx-auto mt-4 text-lg text-muted-foreground">
+                Automatically add a personalized watermark to your uploaded images to protect your creative assets.
+              </p>
+            </div>
+            <div className="max-w-3xl mx-auto mt-12">
+              <BeforeAfterSlider
+                  before={
+                      <Image
+                          src="https://placehold.co/800x600.png"
+                          alt="Before"
+                          width={800}
+                          height={600}
+                          className="w-full h-auto object-cover"
+                          data-ai-hint="artistic photo"
+                      />
+                  }
+                  after={
+                      <div className="relative">
+                           <Image
+                              src="https://placehold.co/800x600.png"
+                              alt="After"
+                              width={800}
+                              height={600}
+                              className="w-full h-auto object-cover"
+                              data-ai-hint="artistic photo"
+                           />
+                           <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs p-2 rounded-sm pointer-events-none z-20">
+                               <p className="font-semibold">Your Name</p>
+                               <p className="text-white/80">your.email@example.com</p>
+                           </div>
+                      </div>
+                  }
+              />
+            </div>
+          </div>
+        </section>
+
+
         {/* Marketplace Section */}
-        <section id="marketplace" className="py-16 md:py-24 bg-background">
+        <section id="marketplace" className="py-16 md:py-24 bg-secondary/50">
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center">
               <h2 className="text-3xl md:text-4xl font-bold font-headline">
@@ -213,7 +259,7 @@ export default function Home() {
         </section>
 
         {/* Testimonials Section */}
-        <section id="testimonials" className="py-16 md:py-24 bg-secondary/50">
+        <section id="testimonials" className="py-16 md:py-24 bg-background">
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center">
               <h2 className="text-3xl md:text-4xl font-bold font-headline">
@@ -251,7 +297,7 @@ export default function Home() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-16 md:py-24 bg-background">
+        <section className="py-16 md:py-24 bg-secondary/50">
           <div className="container mx-auto px-4 md:px-6">
             <div className="relative rounded-lg bg-primary text-primary-foreground p-8 md:p-12 lg:p-16 overflow-hidden">
                 <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-white/10 rounded-full"></div>
