@@ -1,7 +1,7 @@
 // src/app/builder/page.tsx
 'use client';
 
-import React, { useState, useTransition, useEffect } from 'react';
+import React, { useState, useTransition, useEffect, useRef } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -34,13 +34,17 @@ import {
   Languages,
   Loader2,
   Link as LinkIcon,
-  MapPin,
+  Minus,
   Palette,
+  PanelRightClose,
+  PanelRightOpen,
+  Plus,
   QrCode,
   Save,
   Share2,
   Sparkles,
   Star,
+  Type,
   User,
   Video,
   X,
@@ -61,13 +65,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getAiPoweredResumeRecommendations } from '@/ai/flows/smart-recommendations';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useTheme } from 'next-themes';
 
 // Wrapper to prevent hydration errors with dnd-kit
 function ClientOnly({ children }: { children: React.ReactNode }) {
@@ -84,8 +88,7 @@ function ClientOnly({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const initialSections = {
-  Standard: [
+const initialSections = [
     { id: 'header', icon: <User />, name: 'Header' },
     { id: 'summary', icon: <FileText />, name: 'Summary' },
     { id: 'education', icon: <GraduationCap />, name: 'Education' },
@@ -94,16 +97,16 @@ const initialSections = {
     { id: 'projects', icon: <Code />, name: 'Projects' },
     { id: 'certifications', icon: <Award />, name: 'Certifications' },
     { id: 'languages', icon: <Languages />, name: 'Languages' },
-  ],
-  Advanced: [
     { id: 'publications', icon: <Book />, name: 'Publications' },
     { id: 'achievements', icon: <Star />, name: 'Achievements' },
     { id: 'cover_letter', icon: <Bot />, name: 'Cover Letter' },
-  ],
-};
+    { id: 'subtitle', icon: <Type />, name: 'Subtitle' },
+    { id: 'line_break', icon: <Minus/>, name: 'Line Break' },
+];
+
 
 const allSectionsMap = new Map(
-  [...initialSections.Standard, ...initialSections.Advanced].map((s) => [
+  initialSections.map((s) => [
     s.id,
     s,
   ])
@@ -122,14 +125,6 @@ const fonts = [
   { name: 'Roboto', family: 'var(--font-roboto)' },
   { name: 'Lato', family: 'var(--font-lato)' },
   { name: 'Montserrat', family: 'var(--font-montserrat)' },
-];
-
-const colors = [
-  { name: 'Default', value: '244 46% 48%' },
-  { name: 'Emerald', value: '145 63% 42%' },
-  { name: 'Rose', value: '346 78% 52%' },
-  { name: 'Amber', value: '45 93% 47%' },
-  { name: 'Slate', value: '215 28% 17%' },
 ];
 
 function DraggableSection({ id, name, icon }) {
@@ -151,7 +146,7 @@ function DraggableSection({ id, name, icon }) {
   );
 }
 
-function SortableResumeSection({ id, children }) {
+function SortableResumeSection({ id, children, onRemove }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -160,33 +155,58 @@ function SortableResumeSection({ id, children }) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative group">
-       <GripVertical className="absolute -left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+    <div ref={setNodeRef} style={style} {...attributes} className="relative group">
+       <div {...listeners} className="absolute -left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
+        <GripVertical />
+       </div>
+       {id !== 'header' && (
+         <button onClick={() => onRemove(id)} className="absolute -right-2 -top-2 h-6 w-6 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary opacity-0 group-hover:opacity-100 transition-opacity">
+            <X className="h-4 w-4" />
+         </button>
+       )}
       {children}
     </div>
   );
 }
 
+
 export default function BuilderPage() {
   const [saveStatus, setSaveStatus] = useState('Saved');
   const [activeId, setActiveId] = useState(null);
-  const [resumeSections, setResumeSections] = useState(['header', 'summary', 'experience']);
-  const [activeColor, setActiveColor] = useState(colors[0].value);
+  const [resumeData, setResumeData] = useState({
+     sections: [
+        {id: 'header', title: 'Header'},
+        {id: 'summary', title: 'Summary'},
+        {id: 'experience', title: 'Experience'}
+     ],
+     content: {}
+  });
+
+  const { theme } = useTheme();
+
+  const [styling, setStyling] = useState({
+      primaryColor: '#1d4ed8',
+      backgroundColorLight: '#ffffff',
+      backgroundColorDark: '#111827',
+      fontFamily: 'var(--font-inter)',
+  });
+
   const [activeFont, setActiveFont] = useState(fonts[0].family);
+  const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  
+  const resumeSectionsIds = resumeData.sections.map(s => s.id);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const handleColorChange = (colorValue) => {
-    document.documentElement.style.setProperty('--primary', colorValue);
-    setActiveColor(colorValue);
+  const handleStyleChange = (property, value) => {
+    setStyling(prev => ({ ...prev, [property]: value }));
   };
 
   const handleFontChange = (fontFamily) => {
-    document.documentElement.style.setProperty('--font-body', fontFamily);
-    document.documentElement.style.setProperty('--font-headline', fontFamily);
     setActiveFont(fontFamily);
+    handleStyleChange('fontFamily', fontFamily);
   };
 
   const handleDragStart = (event) => setActiveId(event.active.id);
@@ -195,33 +215,53 @@ export default function BuilderPage() {
     const { active, over } = event;
     setActiveId(null);
     if (!over) return;
-
-    // Check if dragging from sidebar to canvas
+  
     const isSidebarItem = allSectionsMap.has(active.id);
-    const isOverCanvas = over.id === 'resume-canvas-container' || over.id === 'resume-canvas' || resumeSections.includes(over.id);
-
-    if (isSidebarItem && isOverCanvas && !resumeSections.includes(active.id)) {
-        const overIndex = over.id ? resumeSections.indexOf(over.id as string) : -1;
+    const isOverCanvas = over.id === 'resume-canvas-container' || over.id === 'resume-canvas' || resumeSectionsIds.includes(over.id);
+  
+    if (isSidebarItem && isOverCanvas && !resumeSectionsIds.includes(active.id)) {
+      const newSection = allSectionsMap.get(active.id);
+      const newSectionData = { id: `${newSection.id}_${Date.now()}`, title: newSection.name };
+      
+      const overIndex = over.id ? resumeData.sections.findIndex(s => s.id === over.id) : -1;
+      
+      setResumeData((prev) => {
+        const newSections = [...prev.sections];
         if (overIndex !== -1) {
-            setResumeSections((items) => {
-                const newItems = [...items];
-                newItems.splice(overIndex + 1, 0, active.id as string);
-                return newItems;
-            });
+          newSections.splice(overIndex + 1, 0, newSectionData);
         } else {
-            setResumeSections((items) => [...items, active.id as string]);
+          newSections.push(newSectionData);
         }
+        return { ...prev, sections: newSections };
+      });
     } else {
-        // Reordering within the canvas
-        const activeIndex = resumeSections.indexOf(active.id as string);
-        const overIndex = resumeSections.indexOf(over.id as string);
-
-        if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
-            setResumeSections((items) => arrayMove(items, activeIndex, overIndex));
-        }
+      const activeIndex = resumeData.sections.findIndex(s => s.id === active.id);
+      const overIndex = resumeData.sections.findIndex(s => s.id === over.id);
+  
+      if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
+        setResumeData((prev) => ({
+          ...prev,
+          sections: arrayMove(prev.sections, activeIndex, overIndex),
+        }));
+      }
     }
   };
 
+  const removeSection = (idToRemove) => {
+    setResumeData(prev => ({
+        ...prev,
+        sections: prev.sections.filter(section => section.id !== idToRemove)
+    }));
+  };
+
+  const updateSectionTitle = (id, newTitle) => {
+    setResumeData(prev => ({
+        ...prev,
+        sections: prev.sections.map(section => 
+            section.id === id ? { ...section, title: newTitle } : section
+        )
+    }));
+  };
 
   const handleGetSuggestions = () => {
     startTransition(async () => {
@@ -249,7 +289,7 @@ export default function BuilderPage() {
    const exportAsPDF = () => {
     const resumeElement = document.getElementById('resume-preview');
     if (resumeElement) {
-      html2canvas(resumeElement, { scale: 2 }).then((canvas) => {
+      html2canvas(resumeElement, { scale: 2, backgroundColor: null }).then((canvas) => {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -257,24 +297,30 @@ export default function BuilderPage() {
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
         const ratio = canvasWidth / canvasHeight;
-        const width = pdfWidth;
-        const height = width / ratio;
+        let width = pdfWidth;
+        let height = width / ratio;
+        if (height > pdfHeight) {
+            height = pdfHeight;
+            width = height * ratio;
+        }
 
-        pdf.addImage(imgData, 'PNG', 0, 0, width, height > pdfHeight ? pdfWidth / ratio : height);
+        pdf.addImage(imgData, 'PNG', 0, 0, width, height);
         pdf.save('resume.pdf');
       });
     }
   };
 
 
-  const renderSection = (id) => {
-    switch (id) {
+  const renderSection = (section) => {
+    const baseId = section.id.split('_')[0];
+    switch (baseId) {
       case 'header':
         return (
           <div className="text-center">
             <Input
               defaultValue="Your Name"
-              className="text-4xl font-bold font-headline h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent"
+              className="text-4xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent"
+              style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}
             />
             <Input
               defaultValue="Your Tagline or Role"
@@ -282,41 +328,63 @@ export default function BuilderPage() {
             />
           </div>
         );
-      case 'summary':
-        return (
-          <div>
-            <h2 className="text-xl font-bold font-headline mb-2 border-b-2 border-primary inline-block">Summary</h2>
-            <Textarea placeholder="Write a powerful summary to grab attention..." className="bg-transparent border-0 focus-visible:ring-0 p-0" />
-          </div>
-        );
-      case 'experience':
+       case 'summary':
+       case 'experience':
+       case 'skills':
+       case 'projects':
+       case 'certifications':
+       case 'languages':
+       case 'publications':
+       case 'achievements':
+       case 'cover_letter':
         return (
           <div className="mt-6">
-            <h2 className="text-xl font-bold font-headline mb-2 border-b-2 border-primary inline-block">Experience</h2>
-            <Textarea placeholder="Detail your professional experience..." className="bg-transparent border-0 focus-visible:ring-0 p-0"/>
+             <Input
+                value={section.title}
+                onChange={(e) => updateSectionTitle(section.id, e.target.value)}
+                className="text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent inline-block w-auto mb-2"
+                style={{ borderBottom: '2px solid var(--resume-primary)', fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}
+            />
+            <Textarea placeholder={`Content for ${section.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
           </div>
         );
+       case 'subtitle':
+            return (
+                <div className="mt-4">
+                    <Input 
+                        placeholder="Subtitle"
+                        className="text-lg font-semibold p-0 border-0 h-auto focus-visible:ring-0 bg-transparent"
+                    />
+                </div>
+            );
+        case 'line_break':
+            return <Separator className="my-4 bg-border/50" />;
       default:
-        const section = allSectionsMap.get(id);
         return (
           <div className="mt-6">
-            <h2 className="text-xl font-bold font-headline mb-2 border-b-2 border-primary inline-block">{section?.name}</h2>
-            <div className="p-4 border rounded-md bg-muted/50 text-center text-muted-foreground">
-              {section?.name} section content goes here.
-              <Button size="sm" variant="outline" className="mt-2" onClick={() => setResumeSections(rs => rs.filter(s => s !== id))}>
-                <X className="mr-2 h-4 w-4"/> Remove
-              </Button>
+            <h2 className="text-xl font-bold mb-2 border-b-2 inline-block" style={{borderColor: 'var(--resume-primary)', fontFamily: 'var(--resume-font-headline, var(--font-headline))'}}>{section?.title}</h2>
+             <div className="p-4 border rounded-md bg-muted/50 text-center text-muted-foreground">
+              This is a placeholder for the {section?.title} section.
             </div>
           </div>
         );
     }
   };
 
+  const resumeStyle = {
+    '--resume-primary': styling.primaryColor,
+    '--resume-background': theme === 'dark' ? styling.backgroundColorDark : styling.backgroundColorLight,
+    '--resume-font-family': styling.fontFamily,
+    '--resume-font-headline': styling.fontFamily,
+    fontFamily: 'var(--resume-font-family)',
+    backgroundColor: 'var(--resume-background)',
+  };
+
   return (
     <ClientOnly>
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <TooltipProvider>
-        <div className="flex h-screen bg-muted/40" style={{ fontFamily: activeFont }}>
+        <div className="flex h-[calc(100vh-4rem)] bg-muted/40">
           {/* Sidebar */}
           <aside className="w-80 border-r bg-background">
             <Tabs defaultValue="content" className="flex flex-col h-full">
@@ -328,20 +396,10 @@ export default function BuilderPage() {
               <ScrollArea className="flex-1">
                 <TabsContent value="content" className="p-4">
                   <h3 className="mb-4 text-lg font-semibold">Resume Sections</h3>
-                   <SortableContext items={[...initialSections.Standard, ...initialSections.Advanced].map(s => s.id)} strategy={verticalListSortingStrategy}>
+                   <SortableContext items={initialSections.map(s => s.id)} strategy={verticalListSortingStrategy}>
                     <div className="space-y-2">
-                      <h4 className="font-medium text-sm text-muted-foreground">Standard</h4>
-                      {initialSections.Standard.map((block) => (
+                      {initialSections.map((block) => (
                         <DraggableSection key={block.id} {...block} />
-                      ))}
-                    </div>
-                  
-                  <Separator className="my-4" />
-                   
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-sm text-muted-foreground">Advanced</h4>
-                      {initialSections.Advanced.map((block) => (
-                         <DraggableSection key={block.id} {...block} />
                       ))}
                     </div>
                   </SortableContext>
@@ -358,26 +416,23 @@ export default function BuilderPage() {
                   </div>
                 </TabsContent>
                 <TabsContent value="design" className="p-4 space-y-6">
-                  <div>
-                    <h3 className="mb-4 text-lg font-semibold">Colors</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {colors.map(color => (
-                        <Tooltip key={color.name}>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => handleColorChange(color.value)}
-                              className="h-8 w-8 rounded-full cursor-pointer border-2"
-                              style={{
-                                backgroundColor: `hsl(${color.value})`,
-                                borderColor: activeColor === color.value ? `hsl(${color.value})` : 'transparent',
-                              }}
-                            ></button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>{color.name}</p></TooltipContent>
-                        </Tooltip>
-                      ))}
+                    <div>
+                        <h3 className="mb-4 text-lg font-semibold">Colors</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="primaryColor">Primary Color</Label>
+                                <Input id="primaryColor" type="color" value={styling.primaryColor} onChange={(e) => handleStyleChange('primaryColor', e.target.value)} className="w-24 p-1 h-8" />
+                            </div>
+                             <div className="flex items-center justify-between">
+                                <Label htmlFor="bgColorLight">Background (Light)</Label>
+                                <Input id="bgColorLight" type="color" value={styling.backgroundColorLight} onChange={(e) => handleStyleChange('backgroundColorLight', e.target.value)} className="w-24 p-1 h-8" />
+                            </div>
+                             <div className="flex items-center justify-between">
+                                <Label htmlFor="bgColorDark">Background (Dark)</Label>
+                                <Input id="bgColorDark" type="color" value={styling.backgroundColorDark} onChange={(e) => handleStyleChange('backgroundColorDark', e.target.value)} className="w-24 p-1 h-8" />
+                            </div>
+                        </div>
                     </div>
-                  </div>
                   <div>
                     <h3 className="mb-4 text-lg font-semibold">Fonts</h3>
                     <div className="space-y-2">
@@ -447,13 +502,13 @@ export default function BuilderPage() {
             </header>
             <ScrollArea className="flex-1 p-8" id="resume-canvas-container">
               <div id="resume-canvas" className="w-full max-w-4xl mx-auto">
-                <Card className="w-full aspect-[8.5/11] shadow-lg" id="resume-preview">
-                  <CardContent className="p-8">
-                    <SortableContext items={resumeSections} strategy={verticalListSortingStrategy}>
+                <Card className="w-full aspect-[8.5/11] shadow-lg transition-colors duration-300" id="resume-preview" style={resumeStyle}>
+                  <CardContent className="p-8 text-foreground">
+                    <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
                       <div className="space-y-4">
-                        {resumeSections.map((id) => (
-                           <SortableResumeSection key={id} id={id}>
-                            {renderSection(id)}
+                        {resumeData.sections.map((section) => (
+                           <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
+                            {renderSection(section)}
                           </SortableResumeSection>
                         ))}
                       </div>
@@ -464,36 +519,54 @@ export default function BuilderPage() {
             </ScrollArea>
           </main>
           <DragOverlay>
-            {activeId && allSectionsMap.get(activeId) ? (
+            {activeId && allSectionsMap.get(activeId.split('_')[0]) ? (
               <Card
                 className='flex items-center p-2 cursor-grabbing opacity-80'
               >
                 <GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />
-                {React.cloneElement(allSectionsMap.get(activeId).icon, { className: 'h-5 w-5 mr-3 text-primary' })}
-                <span className="text-sm font-medium">{allSectionsMap.get(activeId).name}</span>
+                {React.cloneElement(allSectionsMap.get(activeId.split('_')[0]).icon, { className: 'h-5 w-5 mr-3 text-primary' })}
+                <span className="text-sm font-medium">{allSectionsMap.get(activeId.split('_')[0]).name}</span>
               </Card>
             ) : null}
           </DragOverlay>
 
           {/* AI Sidebar */}
-          <aside className="w-72 border-l bg-background p-4">
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Bot className="h-6 w-6 text-primary" />
-                  Smart Suggestions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Get AI-powered help to improve your resume. Enter a job title and industry for tailored suggestions.
-                </p>
-                <Button className="w-full mt-4" onClick={handleGetSuggestions} disabled={isPending}>
-                  {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                  Suggest Bullet Points
-                </Button>
-              </CardContent>
-            </Card>
+          <aside className={cn("border-l bg-background transition-all duration-300 ease-in-out", isAiPanelOpen ? "w-72 p-4" : "w-0 p-0")}>
+            {isAiPanelOpen ? (
+                <Card className="h-full">
+                <CardHeader>
+                    <CardTitle className="flex items-center justify-between text-lg">
+                    <div className="flex items-center gap-2">
+                        <Bot className="h-6 w-6 text-primary" />
+                        Smart Suggestions
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => setIsAiPanelOpen(false)}>
+                        <PanelRightClose />
+                    </Button>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                    Get AI-powered help to improve your resume. Enter a job title and industry for tailored suggestions.
+                    </p>
+                    <Button className="w-full mt-4" onClick={handleGetSuggestions} disabled={isPending}>
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                    Suggest Bullet Points
+                    </Button>
+                </CardContent>
+                </Card>
+            ) : (
+                <div className="flex items-center h-full p-2">
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => setIsAiPanelOpen(true)}>
+                                <PanelRightOpen />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left"><p>Open Smart Suggestions</p></TooltipContent>
+                    </Tooltip>
+                </div>
+            )}
           </aside>
         </div>
       </TooltipProvider>

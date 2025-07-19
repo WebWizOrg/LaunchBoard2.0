@@ -18,8 +18,8 @@ export function SiteHeader() {
   // In a real app, you'd get this from a session provider
   const isLoggedIn = false 
 
-  if (pathname.startsWith('/builder')) {
-    return null;
+  if (pathname.startsWith('/login') || pathname.startsWith('/signup')) {
+      return null;
   }
 
   return (
@@ -81,14 +81,16 @@ export function SiteHeader() {
                 Dashboard
               </Link>
             ) : (
-              <>
-                <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }))}>
-                  Log in
-                </Link>
-                <Link href="/signup" className={cn(buttonVariants({ variant: "default" }), "bg-primary hover:bg-primary/90 text-primary-foreground")}>
-                  Sign Up
-                </Link>
-              </>
+               !pathname.startsWith('/builder') && (
+                <>
+                  <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }))}>
+                    Log in
+                  </Link>
+                  <Link href="/signup" className={cn(buttonVariants({ variant: "default" }), "bg-primary hover:bg-primary/90 text-primary-foreground")}>
+                    Sign Up
+                  </Link>
+                </>
+              )
             )}
             <ThemeToggle />
           </div>
