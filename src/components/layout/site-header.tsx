@@ -19,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { collection, query, orderBy, limit, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export function SiteHeader() {
@@ -27,6 +27,7 @@ export function SiteHeader() {
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
   const [lastResumeId, setLastResumeId] = useState<string | null>(null);
+  const [lastPortfolioId, setLastPortfolioId] = useState<string | null>(null);
   
   useEffect(() => {
     if (user && !loading) {
@@ -39,16 +40,26 @@ export function SiteHeader() {
         } else {
           setLastResumeId(null);
         }
+        
+        // Fetch last portfolio
+        const portfolioQuery = query(collection(db, `users/${user.uid}/portfolios`), orderBy("updatedAt", "desc"), limit(1));
+        const portfolioSnapshot = await getDocs(portfolioQuery);
+        if (!portfolioSnapshot.empty) {
+          setLastPortfolioId(portfolioSnapshot.docs[0].id);
+        } else {
+          setLastPortfolioId(null);
+        }
       };
       getMostRecentDocs();
     }
-  }, [user, loading, pathname]); // Re-check when path changes to update active doc
+  }, [user, loading, pathname]);
 
   const resumeBuilderHref = lastResumeId ? `/builder?id=${lastResumeId}` : '/dashboard';
+  const portfolioBuilderHref = lastPortfolioId ? `/portfolio/builder?id=${lastPortfolioId}` : '/dashboard';
 
   const navLinks = [
     { name: "Resume Builder", href: resumeBuilderHref },
-    // { name: "Portfolio Builder", href: "/portfolio/builder" },
+    { name: "Portfolio Builder", href: portfolioBuilderHref },
     { name: "Marketplace", href: "/#marketplace" },
     { name: "Dashboard", href: "/dashboard" },
   ]
@@ -101,7 +112,7 @@ export function SiteHeader() {
         {/* Desktop Nav */}
         <div className="hidden md:flex flex-1 items-center justify-between">
             {/* Left: Logo */}
-            <div className="flex-1">
+            <div className="flex-1 flex justify-start">
                 <Link href="/" className="flex items-center space-x-2">
                     <Rocket className="h-6 w-6 text-primary" />
                     <span className="font-bold sm:inline-block font-headline">
