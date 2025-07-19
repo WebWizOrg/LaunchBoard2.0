@@ -1,4 +1,5 @@
 
+
 // src/app/builder/page.tsx
 'use client';
 
@@ -693,7 +694,7 @@ export default function BuilderPage() {
 
             return (
                 <div className='flex flex-col h-full'>
-                    <div className="h-[20%] p-6 flex items-center gap-6" style={{ backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-accent-text-color)' }}>
+                    <div className="h-[25%] p-6 flex items-center justify-center text-center gap-6" style={{ backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-accent-text-color)' }}>
                          {headerContent.showAvatar && (
                             <div className="relative group w-32 h-32 flex-shrink-0">
                                 <Image
@@ -702,7 +703,7 @@ export default function BuilderPage() {
                                     width={128}
                                     height={128}
                                     data-ai-hint="placeholder"
-                                    className="rounded-full object-cover w-32 h-32 border-2 border-current"
+                                    className="rounded-full object-cover w-32 h-32 border-4 border-current"
                                 />
                                 <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                                     <ImageIcon className="h-8 w-8" />
@@ -710,22 +711,22 @@ export default function BuilderPage() {
                                 <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                             </div>
                         )}
-                        <div>
+                        <div className="flex-grow">
                              <Input
                                 value={headerContent.name}
                                 onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)}
-                                className="text-4xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent"
+                                className="text-5xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent text-center"
                                 style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: 'var(--resume-accent-text-color)' }}
                             />
                             <Input
                                 value={headerContent.tagline}
                                 onChange={(e) => handleContentChange(headerSection.id, 'tagline', e.target.value)}
-                                className="p-0 border-0 h-auto focus-visible:ring-0 bg-transparent opacity-80"
+                                className="text-xl p-0 border-0 h-auto focus-visible:ring-0 bg-transparent opacity-80 text-center mt-2"
                                 style={{color: 'var(--resume-accent-text-color)'}}
                             />
                         </div>
                     </div>
-                    <div className="h-[80%] flex">
+                    <div className="h-[75%] flex bg-muted/30">
                         <div className="w-[30%] p-6">
                             <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
                                 {leftContent.map((section) => (
