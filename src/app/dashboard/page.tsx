@@ -202,12 +202,19 @@ export default function Dashboard() {
     if (!user) return;
     try {
       const collectionName = type === 'resume' ? 'resumes' : 'portfolios';
-      const newDocRef = await addDoc(collection(db, `users/${user.uid}/${collectionName}`), {
+      const newDocData = {
         name: `Untitled ${type.charAt(0).toUpperCase() + type.slice(1)}`,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        isPublished: false,
-      });
+        isPublished: true, // Published by default
+      };
+      const newDocRef = await addDoc(collection(db, `users/${user.uid}/${collectionName}`), newDocData);
+
+      // Also create the public document
+      const publicCollectionName = type === 'resume' ? 'publishedResumes' : 'publishedPortfolios';
+      const publicDocRef = doc(db, publicCollectionName, newDocRef.id);
+      await setDoc(publicDocRef, {...newDocData, ownerId: user.uid});
+
       const path = type === 'resume' ? '/builder' : '/portfolio/builder';
       router.push(`${path}?id=${newDocRef.id}`);
     } catch (error) {
@@ -216,7 +223,7 @@ export default function Dashboard() {
     }
   };
   
-  const deleteDoc = async (docId: string, type: 'resume' | 'portfolio') => {
+  const deleteDocAndPublish = async (docId: string, type: 'resume' | 'portfolio') => {
     if (!user) return;
     try {
       const collectionName = type === 'resume' ? 'resumes' : 'portfolios';
@@ -396,7 +403,7 @@ export default function Dashboard() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => deleteDoc(doc.id, doc.type)} className="bg-destructive hover:bg-destructive/90">
+                                    <AlertDialogAction onClick={() => deleteDocAndPublish(doc.id, doc.type)} className="bg-destructive hover:bg-destructive/90">
                                         Continue
                                     </AlertDialogAction>
                                     </AlertDialogFooter>

@@ -216,13 +216,13 @@ export default function PortfolioBuilderPage() {
   const portfolioId = searchParams.get('id');
   const { user } = useAuth();
   const { toast } = useToast();
+  const sensors = useSensors(useSensor(PointerSensor));
   
   const [saveStatus, setSaveStatus] = useState('Saved');
   const [activeId, setActiveId] = useState(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [portfolioData, setPortfolioData] = useState<DocumentData | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor));
 
   useEffect(() => {
     if(!portfolioId) {
@@ -553,8 +553,28 @@ export default function PortfolioBuilderPage() {
                       <DialogHeader><DialogTitle>Share Your Portfolio</DialogTitle><DialogDescription>Anyone with this link will be able to view your portfolio. Make sure to publish it first.</DialogDescription></DialogHeader>
                       <div className="grid gap-4 py-4">
                           <div className="flex items-center space-x-2"><Switch id="publish-switch" checked={portfolioData.isPublished} onCheckedChange={handlePublishChange} /><Label htmlFor="publish-switch">{portfolioData.isPublished ? 'Published' : 'Unpublished'}</Label></div>
-                          <Label htmlFor="share-link">Shareable Link</Label>
-                          <div className="flex gap-2"><Input id="share-link" defaultValue={`${window.location.origin}/portfolio/share/${portfolioId}`} readOnly /><Button onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/portfolio/share/${portfolioId}`); toast({ title: "Copied to clipboard!" });}}><Copy className="h-4 w-4"/></Button></div>
+                           <div className="flex items-center gap-4">
+                              <div className="flex-grow space-y-2">
+                                <Label htmlFor="share-link">Shareable Link</Label>
+                                <div className="flex gap-2">
+                                  <Input id="share-link" defaultValue={`${window.location.origin}/portfolio/share/${portfolioId}`} readOnly />
+                                  <Button size="icon" onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/portfolio/share/${portfolioId}`); toast({ title: "Copied to clipboard!" });}}>
+                                    <Copy className="h-4 w-4"/>
+                                  </Button>
+                                </div>
+                              </div>
+                              <div>
+                                  <Label>QR Code</Label>
+                                  <div className="p-2 border rounded-md mt-2 bg-white">
+                                      <Image
+                                          src={`https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(`${window.location.origin}/portfolio/share/${portfolioId}`)}`}
+                                          width={128}
+                                          height={128}
+                                          alt="QR Code for shareable link"
+                                      />
+                                  </div>
+                              </div>
+                           </div>
                       </div>
                     </DialogContent>
                   </Dialog>

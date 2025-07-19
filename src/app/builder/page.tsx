@@ -305,6 +305,7 @@ export default function BuilderPage() {
   const searchParams = useSearchParams();
   const resumeId = searchParams.get('id');
   const { user } = useAuth();
+  const sensors = useSensors(useSensor(PointerSensor));
   
   const [saveStatus, setSaveStatus] = useState('Saved');
   const [activeId, setActiveId] = useState(null);
@@ -399,7 +400,7 @@ export default function BuilderPage() {
   const resumeSectionsIds = resumeData?.sections.map(s => s.id) || [];
   const styling = resumeData?.styling || defaultResumeData.styling;
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  
 
   const updateResumeData = (updater) => {
     setResumeData(prev => {
@@ -1750,15 +1751,30 @@ export default function BuilderPage() {
                             {resumeData.isPublished ? 'Published' : 'Unpublished'}
                           </Label>
                         </div>
-                        <Label htmlFor="share-link">Shareable Link</Label>
-                        <div className="flex gap-2">
-                            <Input id="share-link" defaultValue={`${window.location.origin}/share/${resumeId}`} readOnly />
-                            <Button onClick={() => {
-                                navigator.clipboard.writeText(`${window.location.origin}/share/${resumeId}`);
-                                toast({ title: "Copied to clipboard!" });
-                            }}>
-                                <Copy className="h-4 w-4"/>
-                            </Button>
+                        <div className="flex items-center gap-4">
+                          <div className="flex-grow space-y-2">
+                            <Label htmlFor="share-link">Shareable Link</Label>
+                            <div className="flex gap-2">
+                                <Input id="share-link" defaultValue={`${window.location.origin}/share/${resumeId}`} readOnly />
+                                <Button size="icon" onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/share/${resumeId}`);
+                                    toast({ title: "Copied to clipboard!" });
+                                }}>
+                                    <Copy className="h-4 w-4"/>
+                                </Button>
+                            </div>
+                          </div>
+                          <div>
+                              <Label>QR Code</Label>
+                              <div className="p-2 border rounded-md mt-2 bg-white">
+                                  <Image
+                                      src={`https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(`${window.location.origin}/share/${resumeId}`)}`}
+                                      width={128}
+                                      height={128}
+                                      alt="QR Code for shareable link"
+                                  />
+                              </div>
+                          </div>
                         </div>
                     </div>
                   </DialogContent>
