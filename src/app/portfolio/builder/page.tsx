@@ -129,7 +129,7 @@ const templates = [
   { name: 'Brutalist', id: 'brutalist', image: 'https://placehold.co/200x150.png', hint: 'brutalist portfolio' },
 ];
 
-const DraggableSection = ({ id, name, icon }) => {
+const DraggableSection = ({ id, name, icon }: {id: string, name: string, icon: React.ReactElement}) => {
   const { attributes, listeners, setNodeRef, isDragging } = useSortable({ id });
   return (
     <Card ref={setNodeRef} {...attributes} {...listeners} className={cn('flex items-center p-2 cursor-grab', isDragging && 'opacity-50 z-50')}>
@@ -140,7 +140,7 @@ const DraggableSection = ({ id, name, icon }) => {
   );
 };
 
-function SortableSection({ id, children, onRemove, isPreviewing }) {
+function SortableSection({ id, children, onRemove, isPreviewing }: {id: string, children: React.ReactNode, onRemove: (id: string) => void, isPreviewing: boolean}) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
     const style = {
       transform: CSS.Transform.toString(transform),
@@ -165,7 +165,7 @@ function SortableSection({ id, children, onRemove, isPreviewing }) {
     );
   }
 
-const DroppableCanvas = ({ children }) => {
+const DroppableCanvas = ({ children }: {children: React.ReactNode}) => {
   const { setNodeRef, isOver } = useDroppable({ id: 'portfolio-canvas-droppable' });
   return (
     <div ref={setNodeRef} className={cn('min-h-full w-full', isOver && 'outline-dashed outline-2 outline-primary outline-offset-4')}>
@@ -174,7 +174,7 @@ const DroppableCanvas = ({ children }) => {
   );
 };
 
-const createNewItem = (itemType) => {
+const createNewItem = (itemType: string) => {
     const common = { id: `${itemType}_item_${Date.now()}` };
     switch (itemType) {
         case 'projects': return { ...common, title: 'New Project', description: 'A short description of your project.', image: 'https://placehold.co/600x400.png', hint: 'placeholder image', link: '#' };
@@ -222,7 +222,6 @@ export default function PortfolioBuilderPage() {
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [portfolioData, setPortfolioData] = useState<DocumentData | null>(null);
-
   const sensors = useSensors(useSensor(PointerSensor));
 
   const debouncedSave = useCallback(
@@ -272,7 +271,7 @@ export default function PortfolioBuilderPage() {
 
     return () => unsubscribe();
   }, [user, portfolioId, router]);
-
+  
   if (!isDataLoaded || !portfolioData) {
     return (
       <div className="flex items-center justify-center h-screen bg-muted">
@@ -281,7 +280,7 @@ export default function PortfolioBuilderPage() {
     );
   }
 
-  const updatePortfolioData = (updater) => {
+  const updatePortfolioData = (updater: (prev: DocumentData) => DocumentData) => {
     setPortfolioData(prev => {
       if (!prev) return null;
       const newState = updater(prev);
@@ -289,7 +288,7 @@ export default function PortfolioBuilderPage() {
     });
   };
 
-  const handleStyleChange = (property, value) => {
+  const handleStyleChange = (property: string, value: any) => {
     updatePortfolioData(prev => ({ ...prev, styling: { ...prev.styling, [property]: value } }));
   };
   
@@ -297,11 +296,11 @@ export default function PortfolioBuilderPage() {
     updatePortfolioData(prev => ({...prev, name: newName}));
   }
 
-  const handleContentChange = (sectionId, field, value) => {
+  const handleContentChange = (sectionId: string, field: string, value: any) => {
     updatePortfolioData(prev => ({ ...prev, content: { ...prev.content, [sectionId]: { ...prev.content[sectionId], [field]: value }}}));
   };
 
-  const handleListItemChange = (sectionId, itemIndex, field, value) => {
+  const handleListItemChange = (sectionId: string, itemIndex: number, field: string, value: any) => {
       updatePortfolioData(prev => {
           const newItems = [...prev.content[sectionId].items];
           newItems[itemIndex] = { ...newItems[itemIndex], [field]: value };
@@ -309,7 +308,7 @@ export default function PortfolioBuilderPage() {
       });
   };
 
-  const addListItem = (sectionId, itemType) => {
+  const addListItem = (sectionId: string, itemType: string) => {
       updatePortfolioData(prev => {
           const newItem = createNewItem(itemType);
           const newItems = [...(prev.content[sectionId]?.items || []), newItem];
@@ -317,7 +316,7 @@ export default function PortfolioBuilderPage() {
       });
   };
 
-  const removeListItem = (sectionId, itemIndex) => {
+  const removeListItem = (sectionId: string, itemIndex: number) => {
       updatePortfolioData(prev => {
           const newItems = [...prev.content[sectionId].items];
           newItems.splice(itemIndex, 1);
@@ -325,32 +324,32 @@ export default function PortfolioBuilderPage() {
       });
   };
 
-  const handleDragStart = (event) => setActiveId(event.active.id);
+  const handleDragStart = (event: any) => setActiveId(event.active.id);
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = (event: any) => {
     const { active, over } = event;
     setActiveId(null);
   
     if (!over) return;
   
     const isSidebarItem = allSectionsMap.has(active.id);
-    const isCanvasItem = portfolioData?.sections.some(s => s.id === active.id);
+    const isCanvasItem = portfolioData?.sections.some((s: any) => s.id === active.id);
     const isDroppingOnCanvas = over.id === 'portfolio-canvas-droppable';
-    const isDroppingOnCanvasItem = portfolioData?.sections.some(s => s.id === over.id);
+    const isDroppingOnCanvasItem = portfolioData?.sections.some((s: any) => s.id === over.id);
   
     if (isSidebarItem && (isDroppingOnCanvas || isDroppingOnCanvasItem)) {
       const newSectionType = active.id;
       const newSectionId = `${newSectionType}_${Date.now()}`;
       const newSectionData = { id: newSectionId, type: newSectionType };
       
-      let defaultContent = { title: allSectionsMap.get(newSectionType)?.name || 'New Section' };
+      let defaultContent: any = { title: allSectionsMap.get(newSectionType)?.name || 'New Section' };
       if (['projects', 'experience', 'blog', 'skills', 'testimonials', 'gallery', 'faq'].includes(newSectionType)) {
           defaultContent.items = [];
       } else {
         defaultContent.text = '';
       }
   
-      const overIndex = isDroppingOnCanvasItem ? portfolioData.sections.findIndex(s => s.id === over.id) : portfolioData.sections.length;
+      const overIndex = isDroppingOnCanvasItem ? portfolioData.sections.findIndex((s: any) => s.id === over.id) : portfolioData.sections.length;
       
       updatePortfolioData(prev => {
         const newSections = [...prev.sections];
@@ -360,18 +359,18 @@ export default function PortfolioBuilderPage() {
 
     } else if (isCanvasItem && isDroppingOnCanvasItem) {
       if (active.id !== over.id) {
-        const activeIndex = portfolioData.sections.findIndex(s => s.id === active.id);
-        const overIndex = portfolioData.sections.findIndex(s => s.id === over.id);
+        const activeIndex = portfolioData.sections.findIndex((s: any) => s.id === active.id);
+        const overIndex = portfolioData.sections.findIndex((s: any) => s.id === over.id);
         updatePortfolioData((prev) => ({ ...prev, sections: arrayMove(prev.sections, activeIndex, overIndex) }));
       }
     }
   };
 
-  const removeSection = (idToRemove) => {
+  const removeSection = (idToRemove: string) => {
     updatePortfolioData(prev => {
         const newContent = { ...prev.content };
         delete newContent[idToRemove];
-        return { ...prev, sections: prev.sections.filter(section => section.id !== idToRemove), content: newContent };
+        return { ...prev, sections: prev.sections.filter((section: any) => section.id !== idToRemove), content: newContent };
     });
   };
 
@@ -390,13 +389,13 @@ export default function PortfolioBuilderPage() {
     }
   };
 
-  const renderSectionComponent = (section, isPublicView = false) => {
+  const renderSectionComponent = (section: any, isPublicView = false) => {
     const content = portfolioData.content[section.id] || {};
     const isEditable = !isPreviewing && !isPublicView;
 
     // A simple container for sections, more styling can be added via templates
-    const SectionWrapper = ({children, id}) => <section id={id} className="w-full px-8 py-12 md:px-16 md:py-20">{children}</section>;
-    const Title = ({children}) => <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-8 text-center">{children}</h2>;
+    const SectionWrapper = ({children, id}: {children: React.ReactNode, id: string}) => <section id={id} className="w-full px-8 py-12 md:px-16 md:py-20">{children}</section>;
+    const Title = ({children}: {children: React.ReactNode}) => <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-8 text-center">{children}</h2>;
 
     switch (section.type) {
         case 'header': return (
@@ -426,7 +425,7 @@ export default function PortfolioBuilderPage() {
                 <div className="container mx-auto">
                     {isEditable ? <Input value={content.title || ''} onChange={e => handleContentChange(section.id, 'title', e.target.value)} className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-8 text-center bg-transparent border-0 h-auto p-0"/> : <Title>{content.title}</Title>}
                     <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                        {(content.items || []).map((item, index) => (
+                        {(content.items || []).map((item: any, index: number) => (
                             <Card key={item.id} className="group/item relative">
                                 {isEditable && <button onClick={() => removeListItem(section.id, index)} className="absolute top-2 right-2 h-6 w-6 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-4 w-4" /></button>}
                                 <CardContent className="p-4">
@@ -471,7 +470,7 @@ export default function PortfolioBuilderPage() {
     }
   };
   
-  const portfolioSectionsIds = portfolioData?.sections.map(s => s.id) || [];
+  const portfolioSectionsIds = portfolioData?.sections.map((s: any) => s.id) || [];
   const styling = portfolioData?.styling || defaultPortfolioData.styling;
 
   const portfolioStyle = {
@@ -563,7 +562,7 @@ export default function PortfolioBuilderPage() {
                       <div className={cn("shadow-lg overflow-hidden", isPreviewing ? 'h-full' : 'rounded-lg border')} style={portfolioStyle}>
                         <DroppableCanvas>
                             <SortableContext items={portfolioSectionsIds} strategy={verticalListSortingStrategy} disabled={isPreviewing}>
-                              {portfolioData.sections.length > 0 ? portfolioData.sections.map((section) => (
+                              {portfolioData.sections.length > 0 ? portfolioData.sections.map((section: any) => (
                                   <SortableSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
                                       {renderSectionComponent(section)}
                                   </SortableSection>
@@ -580,7 +579,7 @@ export default function PortfolioBuilderPage() {
             </main>
             <DragOverlay>
               {activeId && allSectionsMap.has(activeId) ? (
-                <Card className='flex items-center p-2 cursor-grabbing opacity-80'><GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />{React.cloneElement(allSectionsMap.get(activeId).icon, { className: 'h-5 w-5 mr-3 text-primary' })}<span className="text-sm font-medium">{allSectionsMap.get(activeId).name}</span></Card>
+                <Card className='flex items-center p-2 cursor-grabbing opacity-80'><GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />{React.cloneElement(allSectionsMap.get(activeId)?.icon as React.ReactElement, { className: 'h-5 w-5 mr-3 text-primary' })}<span className="text-sm font-medium">{allSectionsMap.get(activeId)?.name}</span></Card>
               ) : null}
             </DragOverlay>
 
