@@ -7,6 +7,8 @@ import { SiteHeader } from '@/components/layout/site-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
+import { Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -63,6 +65,14 @@ export const metadata: Metadata = {
   description: 'Build. Share. Get Hired.',
 };
 
+function FullPageLoader() {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <Loader2 className="h-8 w-8 animate-spin" />
+    </div>
+  )
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -93,7 +103,9 @@ export default function RootLayout({
           <AuthProvider>
             <div className="relative flex min-h-screen flex-col">
               <SiteHeader />
-              <div className="flex-1">{children}</div>
+              <Suspense fallback={<FullPageLoader/>}>
+                <div className="flex-1">{children}</div>
+              </Suspense>
               <SiteFooter />
             </div>
             <Toaster />

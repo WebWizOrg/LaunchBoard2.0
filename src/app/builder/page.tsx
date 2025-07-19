@@ -1,7 +1,8 @@
 // src/app/builder/page.tsx
 'use client';
 
-import React, { useState, useTransition, useEffect, useRef } from 'react';
+import React, { useState, useTransition, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import {
   DndContext,
@@ -61,6 +62,11 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { doc, getDoc, setDoc, onSnapshot, DocumentData } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/hooks/use-auth';
+import { debounce } from 'lodash';
+
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -262,60 +268,138 @@ const createNewItem = (itemType) => {
     }
 };
 
+const defaultResumeData = {
+  name: 'Untitled Resume',
+  sections: [
+    {id: 'header_1', type: 'header'},
+    {id: 'summary_1', type: 'summary'},
+    {id: 'experience_1', type: 'experience'}
+  ],
+  content: {
+    header_1: { name: 'Your Name', tagline: 'Your Tagline or Role', avatar: '', showAvatar: true, links: [] },
+    summary_1: { title: 'Summary', text: '' },
+    experience_1: {
+        title: 'Experience',
+        items: [
+            { id: 'exp_item_1', company: 'Company Name', role: 'Job Title', dates: 'Month Year - Present', description: '• Your achievements here.' }
+        ]
+    }
+  },
+  styling: {
+    template: 'minimalist',
+    accentColor: '#4842B3',
+    accentTextColor: '#ffffff',
+    backgroundColorLight: '#ffffff',
+    backgroundColorDark: '#1a202c',
+    fontFamily: 'var(--font-inter)',
+    backgroundImage: '',
+    accentPattern: '',
+    backgroundBlur: 0,
+    backgroundBrightness: 100,
+  }
+};
+
 export default function BuilderPage() {
+  const searchParams = useSearchParams();
+  const resumeId = searchParams.get('id');
+  const { user } = useAuth();
+  
   const [saveStatus, setSaveStatus] = useState('Saved');
   const [activeId, setActiveId] = useState(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   
-  const [resumeData, setResumeData] = useState(() => ({
-     sections: [
-        {id: 'header_1', type: 'header'},
-        {id: 'summary_1', type: 'summary'},
-        {id: 'experience_1', type: 'experience'}
-     ],
-     content: {
-        header_1: { name: 'Your Name', tagline: 'Your Tagline or Role', avatar: '', showAvatar: true, links: [] },
-        summary_1: { title: 'Summary', text: '' },
-        experience_1: {
-            title: 'Experience',
-            items: [
-                { id: 'exp_item_1', company: 'Company Name', role: 'Job Title', dates: 'Month Year - Present', description: '• Your achievements here.' }
-            ]
-        }
-     }
-  }));
+  const [resumeData, setResumeData] = useState<DocumentData | null>(null);
+
+  // Debounced save function
+  const debouncedSave = useCallback(
+    debounce((dataToSave) => {
+      if (!user || !resumeId) return;
+      setSaveStatus('Saving...');
+      const resumeRef = doc(db, 'users', user.uid, 'resumes', resumeId);
+      setDoc(resumeRef, dataToSave, { merge: true }).then(() => {
+        setSaveStatus('Saved');
+      }).catch(error => {
+        console.error("Error saving document: ", error);
+        setSaveStatus('Error');
+      });
+    }, 1000),
+    [user, resumeId]
+  );
+  
+  useEffect(() => {
+    if (resumeData && isDataLoaded) {
+      debouncedSave(resumeData);
+    }
+  }, [resumeData, debouncedSave, isDataLoaded]);
+
+  useEffect(() => {
+    if (!user || !resumeId) {
+      if (!user) setIsDataLoaded(true); // Don't block loading if logged out
+      return;
+    };
+
+    const resumeRef = doc(db, 'users', user.uid, 'resumes', resumeId);
+    
+    const unsubscribe = onSnapshot(resumeRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setResumeData({
+          name: data.name || defaultResumeData.name,
+          sections: data.sections || defaultResumeData.sections,
+          content: data.content || defaultResumeData.content,
+          styling: { ...defaultResumeData.styling, ...data.styling },
+        });
+      } else {
+        console.log("No such document! Creating one.");
+        const newResumeData = { ...defaultResumeData, updatedAt: new Date() };
+        setResumeData(newResumeData);
+        setDoc(resumeRef, newResumeData);
+      }
+      setIsDataLoaded(true);
+    }, (error) => {
+      console.error("Error fetching document:", error);
+      setIsDataLoaded(true); // Stop loading on error
+    });
+
+    return () => unsubscribe();
+  }, [user, resumeId]);
+
 
   const { theme } = useTheme();
-
-  const [styling, setStyling] = useState({
-      template: 'minimalist',
-      accentColor: '#4842B3',
-      accentTextColor: '#ffffff',
-      backgroundColorLight: '#ffffff',
-      backgroundColorDark: '#1a202c',
-      fontFamily: 'var(--font-inter)',
-      backgroundImage: '',
-      accentPattern: '',
-      backgroundBlur: 0,
-      backgroundBrightness: 100,
-  });
 
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [textToRewrite, setTextToRewrite] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  
-  const resumeSectionsIds = resumeData.sections.map(s => s.id);
+
+  const resumeSectionsIds = resumeData?.sections.map(s => s.id) || [];
+  const styling = resumeData?.styling || defaultResumeData.styling;
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const handleStyleChange = (property, value) => {
-    setStyling(prev => ({ ...prev, [property]: value }));
+  const updateResumeData = (updater) => {
+    setResumeData(prev => {
+      if (!prev) return null;
+      const newState = updater(prev);
+      return { ...newState, updatedAt: new Date() };
+    });
   };
 
+  const handleStyleChange = (property, value) => {
+    updateResumeData(prev => ({ 
+      ...prev, 
+      styling: { ...prev.styling, [property]: value } 
+    }));
+  };
+  
+  const handleNameChange = (newName: string) => {
+    updateResumeData(prev => ({...prev, name: newName}));
+  }
+
   const handleContentChange = (sectionId, field, value) => {
-    setResumeData(prev => ({
+    updateResumeData(prev => ({
         ...prev,
         content: {
             ...prev.content,
@@ -328,7 +412,7 @@ export default function BuilderPage() {
   };
 
   const handleListItemChange = (sectionId, itemIndex, field, value) => {
-      setResumeData(prev => {
+      updateResumeData(prev => {
           const newItems = [...prev.content[sectionId].items];
           newItems[itemIndex] = { ...newItems[itemIndex], [field]: value };
           return {
@@ -345,7 +429,7 @@ export default function BuilderPage() {
   };
 
   const addListItem = (sectionId, itemType) => {
-      setResumeData(prev => {
+      updateResumeData(prev => {
           const newItem = createNewItem(itemType);
           const newItems = [...(prev.content[sectionId]?.items || []), newItem];
           return {
@@ -362,7 +446,7 @@ export default function BuilderPage() {
   };
 
   const removeListItem = (sectionId, itemIndex) => {
-      setResumeData(prev => {
+      updateResumeData(prev => {
           const newItems = [...prev.content[sectionId].items];
           newItems.splice(itemIndex, 1);
           return {
@@ -464,18 +548,22 @@ export default function BuilderPage() {
       }
   
       const overIndex = isDroppingOnCanvasItem ? resumeData.sections.findIndex(s => s.id === over.id) : resumeData.sections.length;
-      const newSections = [...resumeData.sections];
-      newSections.splice(overIndex, 0, newSectionData);
+      
+      updateResumeData(prev => {
+        const newSections = [...prev.sections];
+        newSections.splice(overIndex, 0, newSectionData);
+        return {
+            ...prev,
+            sections: newSections,
+            content: { ...prev.content, [newSectionId]: defaultContent }
+        };
+      });
 
-      setResumeData(prev => ({
-          sections: newSections,
-          content: { ...prev.content, [newSectionId]: defaultContent }
-      }));
     } else if (isCanvasItem && isDroppingOnCanvasItem) {
       if (active.id !== over.id) {
         const activeIndex = resumeData.sections.findIndex(s => s.id === active.id);
         const overIndex = resumeData.sections.findIndex(s => s.id === over.id);
-        setResumeData((prev) => ({
+        updateResumeData((prev) => ({
           ...prev,
           sections: arrayMove(prev.sections, activeIndex, overIndex),
         }));
@@ -485,10 +573,11 @@ export default function BuilderPage() {
   
 
   const removeSection = (idToRemove) => {
-    setResumeData(prev => {
+    updateResumeData(prev => {
         const newContent = { ...prev.content };
         delete newContent[idToRemove];
         return {
+            ...prev,
             sections: prev.sections.filter(section => section.id !== idToRemove),
             content: newContent
         };
@@ -563,7 +652,7 @@ export default function BuilderPage() {
   
     const renderSectionComponent = (section, templateContext = {}) => {
         const content = resumeData.content[section.id] || {};
-        const { isAccentBg = false, titleClass = '' } = templateContext;
+        const { isAccentBg = false } = templateContext;
 
         if (isPreviewing) {
             if (section.type === 'summary' && !content.text) return null;
@@ -572,17 +661,17 @@ export default function BuilderPage() {
         }
 
         const TitleComponent = ({value, icon: Icon, className, ...props}) => {
-            const { titleClass: propTitleClass, ...restProps } = props; // Extract titleClass to avoid passing to DOM
+            const { titleClass, ...restProps } = props; // Extract titleClass to avoid passing to DOM
             return (
                 <div className="flex items-center gap-3 mb-2">
                     {Icon && <Icon className="h-6 w-6" style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }} />}
                     {isPreviewing ? (
-                        <div className={cn("text-xl font-bold w-full", propTitleClass, className)} {...restProps}>{value}</div>
+                        <div className={cn("text-xl font-bold w-full", titleClass, className)} {...restProps}>{value}</div>
                     ) : (
                         <Input 
                             value={value || ''} 
                             onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} 
-                            className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", propTitleClass, className)} 
+                            className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", titleClass, className)} 
                             style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)', ...restProps.style }}
                         />
                     )}
@@ -650,7 +739,7 @@ export default function BuilderPage() {
             case 'contact':
               return (
                 <div className="mt-6">
-                  <TitleComponent value={content.title || ''} icon={Phone} titleClass={titleClass} />
+                  <TitleComponent value={content.title || ''} icon={Phone} titleClass={templateContext.titleClass} />
                   <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
@@ -670,7 +759,7 @@ export default function BuilderPage() {
             case 'socials':
                 return (
                     <div className="mt-6">
-                        <TitleComponent value={content.title || ''} icon={Share} titleClass={titleClass} />
+                        <TitleComponent value={content.title || ''} icon={Share} titleClass={templateContext.titleClass} />
                         <div className="space-y-2">
                             {(content.items || []).map((item, index) => (
                                 <div key={item.id} className="relative group/item flex items-center gap-2">
@@ -709,14 +798,14 @@ export default function BuilderPage() {
           case 'cover_letter':
               return (
                   <div className="mt-6">
-                      <TitleComponent value={content.title || ''} icon={section.type === 'summary' ? FileText : Bot} titleClass={titleClass} />
+                      <TitleComponent value={content.title || ''} icon={section.type === 'summary' ? FileText : Bot} titleClass={templateContext.titleClass} />
                       {isPreviewing ? <p className="whitespace-pre-wrap text-sm">{content.text}</p> : <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />}
                   </div>
               );
           case 'recommendations':
             return (
                 <div className="mt-6">
-                     <TitleComponent value={content.title || ''} icon={Quote} titleClass={titleClass}/>
+                     <TitleComponent value={content.title || ''} icon={Quote} titleClass={templateContext.titleClass}/>
                      <div className="space-y-4">
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
@@ -746,7 +835,7 @@ export default function BuilderPage() {
             const itemConfig = itemTypeMap[section.type];
             return (
                 <div className="mt-6">
-                     <TitleComponent value={content.title || ''} icon={itemConfig.icon} titleClass={titleClass}/>
+                     <TitleComponent value={content.title || ''} icon={itemConfig.icon} titleClass={templateContext.titleClass}/>
                      <div className="space-y-4">
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
@@ -824,7 +913,7 @@ export default function BuilderPage() {
                  <TitleComponent 
                     value={content.title || ''} 
                     icon={Sparkles}
-                    titleClass={titleClass}
+                    titleClass={templateContext.titleClass}
                 />
                  {templateContext.variant === 'creative' && !isPreviewing ? (
                      <div className="space-y-4">
@@ -868,7 +957,7 @@ export default function BuilderPage() {
                  <TitleComponent 
                     value={content.title || ''} 
                     icon={textIconMap[section.type]}
-                    titleClass={titleClass}
+                    titleClass={templateContext.titleClass}
                 />
                 {isPreviewing ? <p className="whitespace-pre-wrap text-sm">{content.text}</p> : <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />}
               </div>
@@ -876,7 +965,7 @@ export default function BuilderPage() {
             case 'image':
               return (
                   <div className="mt-6">
-                      {!isPreviewing && <TitleComponent value={content.title || ''} icon={ImageIcon} titleClass={titleClass} />}
+                      {!isPreviewing && <TitleComponent value={content.title || ''} icon={ImageIcon} titleClass={templateContext.titleClass} />}
                       <div className="relative group w-full" style={{ width: `${content.width}%`}}>
                           <Image
                               src={content.src || 'https://placehold.co/600x400.png'}
@@ -1444,6 +1533,14 @@ export default function BuilderPage() {
     filter: `blur(${styling.backgroundBlur}px) brightness(${styling.backgroundBrightness}%)`,
   };
 
+  if (!isDataLoaded || !resumeData) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <ClientOnly>
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -1528,7 +1625,7 @@ export default function BuilderPage() {
 
                   <div>
                     <h3 className="mb-4 text-lg font-semibold">Fonts</h3>
-                    <Select onValueChange={handleFontChange} defaultValue={styling.fontFamily}>
+                    <Select onValueChange={handleFontChange} value={styling.fontFamily}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select a font" />
                         </SelectTrigger>
@@ -1570,8 +1667,13 @@ export default function BuilderPage() {
           <main className="flex-1 flex flex-col">
             <header className="flex items-center justify-between p-2 border-b bg-background">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>{saveStatus}</span>
+                <Input value={resumeData.name} onChange={(e) => handleNameChange(e.target.value)} className="text-sm font-semibold h-8 border-0 focus-visible:ring-1 bg-transparent" />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-24">
+                  {saveStatus === 'Saving...' && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {saveStatus === 'Saved' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                  {saveStatus === 'Error' && <AlertCircle className="h-4 w-4 text-destructive" />}
+                  <span>{saveStatus}</span>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Tooltip>
@@ -1588,10 +1690,7 @@ export default function BuilderPage() {
                   </TooltipTrigger>
                   <TooltipContent><p>{isPreviewing ? "Exit Preview" : "Preview"}</p></TooltipContent>
                 </Tooltip>
-                <Button variant="outline" size="sm" onClick={() => { setSaveStatus('Saving...'); setTimeout(() => setSaveStatus('Saved'), 1000)}}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save
-                </Button>
+                
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button size="sm">
@@ -1606,8 +1705,8 @@ export default function BuilderPage() {
                     <div className="grid gap-4 py-4">
                         <Label htmlFor="share-link">Shareable Link</Label>
                         <div className="flex gap-2">
-                            <Input id="share-link" defaultValue="https://launchboard.dev/share/your-unique-id" readOnly />
-                            <Button onClick={() => navigator.clipboard.writeText('https://launchboard.dev/share/your-unique-id')}>
+                            <Input id="share-link" defaultValue={`https://launchboard.dev/share/${resumeId}`} readOnly />
+                            <Button onClick={() => navigator.clipboard.writeText(`https://launchboard.dev/share/${resumeId}`)}>
                                 <Copy className="h-4 w-4"/>
                             </Button>
                         </div>

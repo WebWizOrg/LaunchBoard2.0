@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Rocket, LogOut } from "lucide-react"
@@ -17,14 +18,34 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
+  const [lastResumeId, setLastResumeId] = useState<string | null>(null);
   
+  useEffect(() => {
+    if (user && !loading) {
+      const getMostRecentResume = async () => {
+        const q = query(collection(db, `users/${user.uid}/resumes`), orderBy("updatedAt", "desc"), limit(1));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          setLastResumeId(querySnapshot.docs[0].id);
+        } else {
+          setLastResumeId(null);
+        }
+      };
+      getMostRecentResume();
+    }
+  }, [user, loading, pathname]); // Re-check when path changes to update active resume
+
+  const builderHref = lastResumeId ? `/builder?id=${lastResumeId}` : '/dashboard';
+
   const navLinks = [
-    { name: "Builder", href: "/builder" },
+    { name: "Builder", href: builderHref },
     { name: "Marketplace", href: "/#marketplace" },
     { name: "Dashboard", href: "/dashboard" },
   ]
