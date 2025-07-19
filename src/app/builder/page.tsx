@@ -1,4 +1,5 @@
 
+
 // src/app/builder/page.tsx
 'use client';
 
@@ -505,7 +506,7 @@ export default function BuilderPage() {
   };
 
 
-  const handleFontChange = (fontFamily) => {
+  const handleFontChange = (fontFamily: string) => {
     handleStyleChange('fontFamily', fontFamily);
   };
   
