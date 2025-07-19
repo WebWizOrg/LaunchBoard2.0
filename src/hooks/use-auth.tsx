@@ -9,12 +9,16 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
+  updatePassword as firebaseUpdatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
   GoogleAuthProvider,
   GithubAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
-import { doc, setDoc, getDoc, serverTimestamp, collection, addDoc } from 'firebase/firestore';
+import { auth, db, storage } from '@/lib/firebase';
+import { doc, setDoc, getDoc, serverTimestamp, collection, addDoc, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -26,6 +30,9 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<any>;
   signInWithGithub: () => Promise<any>;
   signOut: () => Promise<void>;
+  updateUserProfile: (profile: { displayName?: string; photoURL?: string }) => Promise<void>;
+  updateUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  updateUserPhoto: (file: File) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,6 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await setDoc(userRef, {
           email: rawUser.email,
           displayName: rawUser.displayName,
+          photoURL: rawUser.photoURL,
           createdAt: serverTimestamp(),
         });
         
@@ -54,7 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             name: 'My First Resume',
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            // You can add default content here if you want
         });
       }
       
@@ -73,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUpWithEmail = async (email: string, password: string, displayName: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(userCredential.user, { displayName });
-    await handleUser(userCredential.user); // Ensure Firestore doc is created
+    await handleUser(userCredential.user); 
     return userCredential;
   };
 
@@ -100,6 +107,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/');
   };
 
+  const updateUserProfile = async (profile: { displayName?: string; photoURL?: string }) => {
+    if (!auth.currentUser) throw new Error("Not authenticated");
+    await updateProfile(auth.currentUser, profile);
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    await updateDoc(userRef, profile);
+    setUser({ ...auth.currentUser }); // Force re-render with new data
+  };
+
+  const updateUserPassword = async (currentPassword: string, newPassword: string) => {
+    if (!auth.currentUser || !auth.currentUser.email) throw new Error("Not authenticated");
+    
+    const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+    
+    await reauthenticateWithCredential(auth.currentUser, credential);
+    await firebaseUpdatePassword(auth.currentUser, newPassword);
+  };
+
+  const updateUserPhoto = async (file: File) => {
+    if (!auth.currentUser) throw new Error("Not authenticated");
+    const storageRef = ref(storage, `avatars/${auth.currentUser.uid}/${file.name}`);
+    await uploadBytes(storageRef, file);
+    const photoURL = await getDownloadURL(storageRef);
+    await updateUserProfile({ photoURL });
+  };
+
+
   const value = {
     user,
     loading,
@@ -108,6 +141,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signInWithGoogle,
     signInWithGithub,
     signOut,
+    updateUserProfile,
+    updateUserPassword,
+    updateUserPhoto,
   };
 
   return (
