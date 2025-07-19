@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link"
+import { usePathname } from 'next/navigation';
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Rocket } from "lucide-react"
@@ -8,13 +9,18 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 
 export function SiteHeader() {
+  const pathname = usePathname();
   const navLinks = [
     { name: "Builder", href: "/builder" },
-    { name: "Marketplace", href: "#marketplace" },
-    { name: "Testimonials", href: "#testimonials" },
+    { name: "Marketplace", href: "/#marketplace" },
+    { name: "Testimonials", href: "/#testimonials" },
   ]
   // In a real app, you'd get this from a session provider
   const isLoggedIn = false 
+
+  if (pathname.startsWith('/builder')) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

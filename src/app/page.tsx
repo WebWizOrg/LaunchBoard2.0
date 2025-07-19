@@ -28,6 +28,8 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import { SiteHeader } from '@/components/layout/site-header';
+import { SiteFooter } from '@/components/layout/site-footer';
 
 export default function Home() {
   const templates = [
@@ -79,6 +81,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen">
+       <SiteHeader />
       <main className="flex-1">
         {/* Hero Section */}
         <section className="relative w-full py-20 md:py-32 lg:py-40 bg-background overflow-hidden">
@@ -225,6 +228,7 @@ export default function Home() {
           </div>
         </section>
       </main>
+      <SiteFooter />
     </div>
   );
 }

@@ -17,8 +17,11 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Space Grotesk', 'sans-serif'],
+        body: ['var(--font-inter)', 'sans-serif'],
+        headline: ['var(--font-space-grotesk)', 'sans-serif'],
+        roboto: ['var(--font-roboto)', 'sans-serif'],
+        lato: ['var(--font-lato)', 'sans-serif'],
+        montserrat: ['var(--font-montserrat)', 'sans-serif'],
       },
       colors: {
         border: 'hsl(var(--border))',

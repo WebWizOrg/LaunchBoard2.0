@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { Rocket, Twitter, Github, Linkedin } from "lucide-react";
+import { usePathname } from 'next/navigation';
+
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  if (pathname.startsWith('/builder')) {
+    return null;
+  }
+  
   return (
     <footer className="w-full border-t bg-background">
       <div className="container mx-auto px-4 md:px-6 py-8">

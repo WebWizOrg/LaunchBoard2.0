@@ -1,7 +1,22 @@
-
+// src/app/builder/page.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   AlertCircle,
   Award,
@@ -10,14 +25,14 @@ import {
   Briefcase,
   CheckCircle,
   Code,
-  Droplets,
+  Copy,
+  Download,
   FileText,
-  Font,
   Github,
   GraduationCap,
   GripVertical,
   Languages,
-  LayoutTemplate,
+  Loader2,
   Link as LinkIcon,
   Map,
   Palette,
@@ -26,60 +41,58 @@ import {
   Share2,
   Sparkles,
   Star,
-  Type,
   User,
   Video,
+  X,
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { getAiPoweredResumeRecommendations } from '@/ai/flows/smart-recommendations';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
-const sectionBlocks = {
+const initialSections = {
   Standard: [
-    { icon: <User />, name: 'Header' },
-    { icon: <FileText />, name: 'Summary' },
-    { icon: <GraduationCap />, name: 'Education' },
-    { icon: <Briefcase />, name: 'Experience' },
-    { icon: <Sparkles />, name: 'Skills' },
-    { icon: <Code />, name: 'Projects' },
-    { icon: <Award />, name: 'Certifications' },
-    { icon: <Languages />, name: 'Languages' },
+    { id: 'header', icon: <User />, name: 'Header' },
+    { id: 'summary', icon: <FileText />, name: 'Summary' },
+    { id: 'education', icon: <GraduationCap />, name: 'Education' },
+    { id: 'experience', icon: <Briefcase />, name: 'Experience' },
+    { id: 'skills', icon: <Sparkles />, name: 'Skills' },
+    { id: 'projects', icon: <Code />, name: 'Projects' },
+    { id: 'certifications', icon: <Award />, name: 'Certifications' },
+    { id: 'languages', icon: <Languages />, name: 'Languages' },
   ],
   Advanced: [
-    { icon: <Book />, name: 'Publications' },
-    { icon: <Star />, name: 'Achievements' },
-    { icon: <Bot />, name: 'Cover Letter' },
+    { id: 'publications', icon: <Book />, name: 'Publications' },
+    { id: 'achievements', icon: <Star />, name: 'Achievements' },
+    { id: 'cover_letter', icon: <Bot />, name: 'Cover Letter' },
   ],
 };
 
-const portfolioWidgets = [
-  { icon: <User />, name: 'About Me' },
-  { icon: <Code />, name: 'Project Cards' },
-  { icon: <LinkIcon />, name: 'Blog Section' },
-  { icon: <Github />, name: 'GitHub Integration' },
-  { icon: <Video />, name: 'Embedded Videos' },
-  { icon: <Map />, name: 'Interactive Map' },
-];
-
-const utilityWidgets = [
-  { icon: <QrCode />, name: 'QR Code' },
-  { icon: <Video />, name: 'Video Intro' },
-];
+const allSectionsMap = new Map(
+  [...initialSections.Standard, ...initialSections.Advanced].map((s) => [
+    s.id,
+    s,
+  ])
+);
 
 const templates = [
   { name: 'Minimalist', image: 'https://placehold.co/150x212' },
@@ -88,172 +101,370 @@ const templates = [
   { name: 'Academic', image: 'https://placehold.co/150x212' },
 ];
 
-const fonts = ['Inter', 'Space Grotesk', 'Roboto', 'Lato', 'Montserrat'];
-const colors = ['#4842B3', '#16262E', '#FFB700', '#3498DB', '#E74C3C'];
+const fonts = [
+  { name: 'Inter', family: 'font-body' },
+  { name: 'Space Grotesk', family: 'font-headline' },
+  { name: 'Roboto', family: "'Roboto', sans-serif" },
+  { name: 'Lato', family: "'Lato', sans-serif" },
+  { name: 'Montserrat', family: "'Montserrat', sans-serif" },
+];
 
+const colors = [
+  { name: 'Default', value: 'hsl(244 46% 48%)' },
+  { name: 'Emerald', value: 'hsl(145 63% 42%)' },
+  { name: 'Rose', value: 'hsl(346 78% 52%)' },
+  { name: 'Amber', value: 'hsl(45 93% 47%)' },
+  { name: 'Slate', value: 'hsl(215 28% 17%)' },
+];
+
+function DraggableSection({ id, name, icon }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useSortable({ id });
+  return (
+    <Card
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className={cn(
+        'flex items-center p-2 cursor-grab',
+        isDragging && 'opacity-50 z-50'
+      )}
+    >
+      <GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />
+      {React.cloneElement(icon, { className: 'h-5 w-5 mr-3 text-primary' })}
+      <span className="text-sm font-medium">{name}</span>
+    </Card>
+  );
+}
+
+function SortableResumeSection({ id, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 'auto',
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="relative group">
+       <GripVertical className="absolute -left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+      {children}
+    </div>
+  );
+}
 
 export default function BuilderPage() {
-    const [saveStatus, setSaveStatus] = useState('Saved'); // Saved, Saving, Unsaved
+  const [saveStatus, setSaveStatus] = useState('Saved');
+  const [activeId, setActiveId] = useState(null);
+  const [resumeSections, setResumeSections] = useState(['header', 'summary', 'experience']);
+  const [activeColor, setActiveColor] = useState(colors[0].value);
+  const [activeFont, setActiveFont] = useState(fonts[0].family);
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
 
-    return (
-    <TooltipProvider>
-      <div className="flex h-[calc(100vh-4rem)] bg-muted/40">
-        {/* Sidebar */}
-        <aside className="w-80 border-r bg-background">
-          <Tabs defaultValue="content" className="flex flex-col h-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="content">Content</TabsTrigger>
-              <TabsTrigger value="templates">Templates</TabsTrigger>
-              <TabsTrigger value="design">Design</TabsTrigger>
-            </TabsList>
-            <ScrollArea className="flex-1">
-              <TabsContent value="content" className="p-4">
-                <h3 className="mb-4 text-lg font-semibold">Resume Sections</h3>
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm text-muted-foreground">Standard</h4>
-                  {sectionBlocks.Standard.map((block) => (
-                    <Card key={block.name} className="flex items-center p-2 cursor-grab">
-                      <GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />
-                      {React.cloneElement(block.icon, { className: 'h-5 w-5 mr-3 text-primary' })}
-                      <span className="text-sm font-medium">{block.name}</span>
-                    </Card>
-                  ))}
-                </div>
-                 <Separator className="my-4" />
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm text-muted-foreground">Advanced</h4>
-                  {sectionBlocks.Advanced.map((block) => (
-                    <Card key={block.name} className="flex items-center p-2 cursor-grab">
-                     <GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />
-                      {React.cloneElement(block.icon, { className: 'h-5 w-5 mr-3 text-primary' })}
-                      <span className="text-sm font-medium">{block.name}</span>
-                    </Card>
-                  ))}
-                </div>
-                <Separator className="my-4" />
-                 <h3 className="mb-4 text-lg font-semibold">Portfolio Widgets</h3>
-                  <div className="space-y-2">
-                     {portfolioWidgets.map((widget) => (
-                        <Card key={widget.name} className="flex items-center p-2 cursor-grab">
-                          <GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />
-                          {React.cloneElement(widget.icon, { className: 'h-5 w-5 mr-3 text-primary' })}
-                          <span className="text-sm font-medium">{widget.name}</span>
-                        </Card>
-                    ))}
-                  </div>
-                 <Separator className="my-4" />
-                 <h3 className="mb-4 text-lg font-semibold">Utility Widgets</h3>
-                  <div className="space-y-2">
-                     {utilityWidgets.map((widget) => (
-                        <Card key={widget.name} className="flex items-center p-2 cursor-grab">
-                          <GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />
-                          {React.cloneElement(widget.icon, { className: 'h-5 w-5 mr-3 text-primary' })}
-                          <span className="text-sm font-medium">{widget.name}</span>
-                        </Card>
-                    ))}
-                  </div>
-              </TabsContent>
-              <TabsContent value="templates" className="p-4">
-                 <h3 className="mb-4 text-lg font-semibold">Select a Template</h3>
-                 <div className="grid grid-cols-2 gap-4">
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  const handleColorChange = (colorValue) => {
+    document.documentElement.style.setProperty('--primary', colorValue.match(/\d+/g).join(' '));
+    setActiveColor(colorValue);
+  };
+
+  const handleFontChange = (fontFamily) => {
+    setActiveFont(fontFamily);
+  };
+
+  const handleDragStart = (event) => setActiveId(event.active.id);
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (active.id !== over?.id) {
+      if (over?.id === 'resume-canvas') {
+        if (!resumeSections.includes(active.id)) {
+          setResumeSections((sections) => [...sections, active.id]);
+        }
+      } else {
+        setResumeSections((items) => {
+          const oldIndex = items.indexOf(active.id);
+          const newIndex = items.indexOf(over.id);
+          return arrayMove(items, oldIndex, newIndex);
+        });
+      }
+    }
+  };
+
+  const handleGetSuggestions = () => {
+    startTransition(async () => {
+      try {
+        const response = await getAiPoweredResumeRecommendations({ jobTitle: 'Software Engineer', industry: 'Technology' });
+        toast({
+            title: 'AI Suggestions Ready!',
+            description: (
+              <ul className="list-disc pl-5">
+                {response.bulletPoints.slice(0, 3).map((bp, i) => <li key={i}>{bp}</li>)}
+              </ul>
+            )
+        });
+      } catch (error) {
+        console.error('Error getting AI suggestions:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to get AI suggestions. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    });
+  };
+
+   const exportAsPDF = () => {
+    const resumeElement = document.getElementById('resume-preview');
+    if (resumeElement) {
+      html2canvas(resumeElement, { scale: 2 }).then((canvas) => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const ratio = canvasWidth / canvasHeight;
+        const width = pdfWidth;
+        const height = width / ratio;
+
+        pdf.addImage(imgData, 'PNG', 0, 0, width, height > pdfHeight ? pdfWidth / ratio : height);
+        pdf.save('resume.pdf');
+      });
+    }
+  };
+
+
+  const renderSection = (id) => {
+    switch (id) {
+      case 'header':
+        return (
+          <div className="text-center">
+            <Input
+              defaultValue="Your Name"
+              className="text-4xl font-bold font-headline h-auto p-0 border-0 text-center focus-visible:ring-0"
+              style={{ fontFamily: activeFont === 'font-headline' ? 'Space Grotesk' : 'Inter' }}
+            />
+            <Input
+              defaultValue="Your Tagline or Role"
+              className="text-muted-foreground p-0 border-0 h-auto text-center focus-visible:ring-0"
+            />
+          </div>
+        );
+      case 'summary':
+        return (
+          <div>
+            <h2 className="text-xl font-bold font-headline mb-2 border-b-2 border-primary inline-block">Summary</h2>
+            <Textarea placeholder="Write a powerful summary to grab attention..." />
+          </div>
+        );
+      case 'experience':
+        return (
+          <div className="mt-6">
+            <h2 className="text-xl font-bold font-headline mb-2 border-b-2 border-primary inline-block">Experience</h2>
+            <Textarea placeholder="Detail your professional experience..." />
+          </div>
+        );
+      default:
+        const section = allSectionsMap.get(id);
+        return (
+          <div className="mt-6">
+            <h2 className="text-xl font-bold font-headline mb-2 border-b-2 border-primary inline-block">{section?.name}</h2>
+            <div className="p-4 border rounded-md bg-muted/50 text-center text-muted-foreground">
+              {section?.name} section content goes here.
+              <Button size="sm" variant="outline" className="mt-2" onClick={() => setResumeSections(rs => rs.filter(s => s !== id))}>
+                <X className="mr-2 h-4 w-4"/> Remove
+              </Button>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <TooltipProvider>
+        <div className="flex h-screen bg-muted/40" style={{ fontFamily: fonts.find(f => f.family === activeFont)?.family }}>
+          {/* Sidebar */}
+          <aside className="w-80 border-r bg-background">
+            <Tabs defaultValue="content" className="flex flex-col h-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="content">Content</TabsTrigger>
+                <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+                <TabsTrigger value="design">Design</TabsTrigger>
+              </TabsList>
+              <ScrollArea className="flex-1">
+                <TabsContent value="content" className="p-4">
+                  <h3 className="mb-4 text-lg font-semibold">Resume Sections</h3>
+                  <SortableContext items={initialSections.Standard.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm text-muted-foreground">Standard</h4>
+                      {initialSections.Standard.map((block) => (
+                        <DraggableSection key={block.id} {...block} />
+                      ))}
+                    </div>
+                  </SortableContext>
+                  <Separator className="my-4" />
+                   <SortableContext items={initialSections.Advanced.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm text-muted-foreground">Advanced</h4>
+                      {initialSections.Advanced.map((block) => (
+                         <DraggableSection key={block.id} {...block} />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </TabsContent>
+                <TabsContent value="marketplace" className="p-4">
+                  <h3 className="mb-4 text-lg font-semibold">Select a Template</h3>
+                  <div className="grid grid-cols-2 gap-4">
                     {templates.map(template => (
-                        <Card key={template.name} className="overflow-hidden cursor-pointer hover:border-primary">
-                            <img src={template.image} alt={template.name} className="w-full h-auto object-cover"/>
-                            <p className="p-2 text-sm text-center font-medium">{template.name}</p>
-                        </Card>
-                    ))}
-                 </div>
-              </TabsContent>
-               <TabsContent value="design" className="p-4 space-y-6">
-                <div>
-                  <h3 className="mb-4 text-lg font-semibold">Colors</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {colors.map(color => (
-                        <div key={color} className="h-8 w-8 rounded-full cursor-pointer border-2" style={{ backgroundColor: color }}></div>
+                      <Card key={template.name} className="overflow-hidden cursor-pointer hover:border-primary">
+                        <img src={template.image} alt={template.name} className="w-full h-auto object-cover" />
+                        <p className="p-2 text-sm text-center font-medium">{template.name}</p>
+                      </Card>
                     ))}
                   </div>
-                </div>
-                 <div>
-                  <h3 className="mb-4 text-lg font-semibold">Fonts</h3>
-                  <div className="space-y-2">
-                    {fonts.map(font => (
-                        <Button key={font} variant="outline" className="w-full justify-start">{font}</Button>
-                    ))}
+                </TabsContent>
+                <TabsContent value="design" className="p-4 space-y-6">
+                  <div>
+                    <h3 className="mb-4 text-lg font-semibold">Colors</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {colors.map(color => (
+                        <Tooltip key={color.name}>
+                          <TooltipTrigger asChild>
+                            <div
+                              onClick={() => handleColorChange(color.value)}
+                              className="h-8 w-8 rounded-full cursor-pointer border-2"
+                              style={{
+                                backgroundColor: color.value,
+                                borderColor: activeColor === color.value ? color.value : 'transparent',
+                              }}
+                            ></div>
+                          </TooltipTrigger>
+                          <TooltipContent><p>{color.name}</p></TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </TabsContent>
-            </ScrollArea>
-          </Tabs>
-        </aside>
+                  <div>
+                    <h3 className="mb-4 text-lg font-semibold">Fonts</h3>
+                    <div className="space-y-2">
+                      {fonts.map(font => (
+                        <Button
+                          key={font.name}
+                          variant={activeFont === font.family ? 'default' : 'outline'}
+                          className="w-full justify-start"
+                          onClick={() => handleFontChange(font.family)}
+                          style={{ fontFamily: font.family }}
+                        >
+                          {font.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+              </ScrollArea>
+            </Tabs>
+          </aside>
 
-        {/* Main Canvas */}
-        <main className="flex-1 flex flex-col">
-           <header className="flex items-center justify-between p-2 border-b bg-background">
-             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle className="h-4 w-4 text-green-500"/>
+          {/* Main Canvas */}
+          <main className="flex-1 flex flex-col">
+            <header className="flex items-center justify-between p-2 border-b bg-background">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle className="h-4 w-4 text-green-500" />
                 <span>{saveStatus}</span>
-             </div>
-             <div className="flex items-center gap-2">
+              </div>
+              <div className="flex items-center gap-2">
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                       <Button variant="ghost" size="icon"> <AlertCircle className="h-5 w-5" /> </Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>ATS Compliance: Good</p></TooltipContent>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon"> <AlertCircle className="h-5 w-5" /> </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>ATS Compliance: Good</p></TooltipContent>
                 </Tooltip>
-                 <Button variant="outline" size="sm" onClick={() => setSaveStatus('Saving...')}>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save
+                <Button variant="outline" size="sm" onClick={() => setSaveStatus('Saving...')}>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save
                 </Button>
-                <Button size="sm">
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Share
-                </Button>
-             </div>
-           </header>
-          <ScrollArea className="flex-1 p-8">
-            <Card className="w-full max-w-4xl mx-auto aspect-[8.5/11] shadow-lg">
-                <CardContent className="p-8">
-                    {/* Real-time resume preview */}
-                     <div className="text-center">
-                        <h1 className="text-4xl font-bold font-headline">Your Name</h1>
-                        <p className="text-muted-foreground">Your Tagline or Role</p>
-                    </div>
-                    <Separator className="my-6" />
-                     <div>
-                        <h2 className="text-xl font-bold font-headline mb-2 border-b-2 border-primary inline-block">Summary</h2>
-                        <Textarea placeholder="Write a powerful summary to grab attention..."/>
-                    </div>
-                     <div className="mt-6">
-                        <h2 className="text-xl font-bold font-headline mb-2 border-b-2 border-primary inline-block">Experience</h2>
-                        <Textarea placeholder="Detail your professional experience..."/>
-                    </div>
-                </CardContent>
-            </Card>
-          </ScrollArea>
-        </main>
-        
-        {/* AI Sidebar */}
-        <aside className="w-72 border-l bg-background p-4">
-             <Card className="h-full">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                        <Bot className="h-6 w-6 text-primary"/>
-                        Smart Suggestions
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                        Get AI-powered help to improve your resume.
-                    </p>
-                    <Button className="w-full mt-4">
-                        <Sparkles className="mr-2 h-4 w-4"/>
-                        Suggest Bullet Points
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <Share2 className="mr-2 h-4 w-4" />
+                      Share
                     </Button>
-                </CardContent>
-             </Card>
-        </aside>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Share Your Resume</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <Label htmlFor="share-link">Shareable Link</Label>
+                        <div className="flex gap-2">
+                            <Input id="share-link" defaultValue="https://launchboard.dev/share/your-unique-id" readOnly />
+                            <Button onClick={() => navigator.clipboard.writeText('https://launchboard.dev/share/your-unique-id')}>
+                                <Copy className="h-4 w-4"/>
+                            </Button>
+                        </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                 <Button size="sm" variant="outline" onClick={exportAsPDF}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export PDF
+                </Button>
+              </div>
+            </header>
+            <ScrollArea className="flex-1 p-8" id="resume-canvas-container">
+              <div id="resume-canvas" className="w-full max-w-4xl mx-auto">
+                <Card className="w-full aspect-[8.5/11] shadow-lg" id="resume-preview">
+                  <CardContent className="p-8">
+                    <SortableContext items={resumeSections} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-4">
+                        {resumeSections.map((id) => (
+                           <SortableResumeSection key={id} id={id}>
+                            {renderSection(id)}
+                          </SortableResumeSection>
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </CardContent>
+                </Card>
+              </div>
+            </ScrollArea>
+          </main>
+          <DragOverlay>
+            {activeId && allSectionsMap.get(activeId) ? (
+              <DraggableSection
+                id={activeId}
+                name={allSectionsMap.get(activeId).name}
+                icon={allSectionsMap.get(activeId).icon}
+              />
+            ) : null}
+          </DragOverlay>
 
-      </div>
-    </TooltipProvider>
-    )
+          {/* AI Sidebar */}
+          <aside className="w-72 border-l bg-background p-4">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Bot className="h-6 w-6 text-primary" />
+                  Smart Suggestions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Get AI-powered help to improve your resume. Enter a job title and industry for tailored suggestions.
+                </p>
+                <Button className="w-full mt-4" onClick={handleGetSuggestions} disabled={isPending}>
+                  {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                  Suggest Bullet Points
+                </Button>
+              </CardContent>
+            </Card>
+          </aside>
+        </div>
+      </TooltipProvider>
+    </DndContext>
+  );
 }
