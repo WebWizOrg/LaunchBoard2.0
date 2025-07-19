@@ -38,6 +38,8 @@ import {
   Languages,
   Link as LinkIcon,
   Linkedin,
+  Mail,
+  MapPin,
   Minus,
   Palette,
   PanelRightClose,
@@ -567,10 +569,19 @@ export default function BuilderPage() {
               return (
                 <div className="mt-6">
                   <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }} />
-                  <div className="space-y-1">
-                      <Input placeholder="Phone Number" value={content.phone} onChange={(e) => handleContentChange(section.id, 'phone', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                      <Input placeholder="Email Address" value={content.email} onChange={(e) => handleContentChange(section.id, 'email', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                      <Input placeholder="Your Address" value={content.address} onChange={(e) => handleContentChange(section.id, 'address', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                  <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground"/>
+                        <Input placeholder="Phone Number" value={content.phone} onChange={(e) => handleContentChange(section.id, 'phone', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground"/>
+                        <Input placeholder="Email Address" value={content.email} onChange={(e) => handleContentChange(section.id, 'email', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground"/>
+                        <Input placeholder="Your Address" value={content.address} onChange={(e) => handleContentChange(section.id, 'address', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                      </div>
                   </div>
                 </div>
               );
@@ -694,7 +705,7 @@ export default function BuilderPage() {
 
             return (
                 <div className='flex flex-col h-full'>
-                    <div className="h-[25%] p-6 flex items-center justify-center text-center gap-6" style={{ backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-accent-text-color)' }}>
+                    <div className="h-[15%] p-6 flex flex-col items-center justify-center text-center gap-4" style={{ backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-accent-text-color)' }}>
                          {headerContent.showAvatar && (
                             <div className="relative group w-32 h-32 flex-shrink-0">
                                 <Image
@@ -711,7 +722,7 @@ export default function BuilderPage() {
                                 <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                             </div>
                         )}
-                        <div className="flex-grow">
+                        <div className="flex-grow flex flex-col justify-center">
                              <Input
                                 value={headerContent.name}
                                 onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)}
@@ -726,7 +737,7 @@ export default function BuilderPage() {
                             />
                         </div>
                     </div>
-                    <div className="h-[75%] flex bg-muted/30">
+                    <div className="h-[85%] flex bg-muted/30">
                         <div className="w-[30%] p-6">
                             <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
                                 {leftContent.map((section) => (
