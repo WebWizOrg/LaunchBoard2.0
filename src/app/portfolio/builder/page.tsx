@@ -70,7 +70,7 @@ import {
 } from 'lucide-react';
 import { doc, getDoc, setDoc, onSnapshot, DocumentData, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, User as FirebaseUser } from '@/hooks/use-auth';
 import { debounce } from 'lodash';
 
 import { Button } from '@/components/ui/button';
@@ -228,6 +228,16 @@ export const defaultPortfolioData = {
     textColor: '#f9fafb',
     fontFamily: 'var(--font-inter)',
   }
+};
+
+const Watermark = ({ user }: { user: FirebaseUser | null }) => {
+    if (!user) return null;
+    return (
+        <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[8px] p-1 rounded-sm pointer-events-none z-20 opacity-70">
+            <p className="truncate">{user.displayName || user.email}</p>
+            <p className="truncate">{user.email}</p>
+        </div>
+    );
 };
 
 export default function PortfolioBuilderPage() {
@@ -485,7 +495,10 @@ export default function PortfolioBuilderPage() {
                         {isEditable ? <Input value={content.title || ''} onChange={e => handleContentChange(section.id, 'title', e.target.value)} className="text-3xl font-bold tracking-tighter sm:text-4xl bg-transparent border-0 h-auto p-0" /> : <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">{content.title}</h2>}
                         {isEditable ? <Textarea value={content.text || ''} onChange={e => handleContentChange(section.id, 'text', e.target.value)} className="text-muted-foreground bg-transparent border-0 p-0" rows={6} /> : <p className="text-muted-foreground">{content.text}</p>}
                     </div>
-                    <Image src={content.image || "https://placehold.co/400x400.png"} width={400} height={400} alt="About Me" className="mx-auto rounded-lg" data-ai-hint={content.hint || 'person portrait'}/>
+                    <div className="relative">
+                        <Image src={content.image || "https://placehold.co/400x400.png"} width={400} height={400} alt="About Me" className="mx-auto rounded-lg" data-ai-hint={content.hint || 'person portrait'}/>
+                        {isEditable && content.image && <Watermark user={user} />}
+                    </div>
                 </div>
             </SectionWrapper>
         );
@@ -498,7 +511,10 @@ export default function PortfolioBuilderPage() {
                             <Card key={item.id} className="group/item relative">
                                 {isEditable && <button onClick={() => removeListItem(section.id, index)} className="absolute top-2 right-2 h-6 w-6 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-4 w-4" /></button>}
                                 <CardContent className="p-4">
-                                    <Image src={item.image || "https://placehold.co/600x400.png"} width={600} height={400} alt={item.title} className="rounded-md mb-4" data-ai-hint={item.hint || 'project screenshot'}/>
+                                    <div className="relative mb-4">
+                                        <Image src={item.image || "https://placehold.co/600x400.png"} width={600} height={400} alt={item.title} className="rounded-md" data-ai-hint={item.hint || 'project screenshot'}/>
+                                        {isEditable && item.image && <Watermark user={user} />}
+                                    </div>
                                     {isEditable ? <Input value={item.title || ''} onChange={e => handleListItemChange(section.id, index, 'title', e.target.value)} className="text-xl font-bold bg-transparent border-0 h-auto p-0" /> : <h3 className="text-xl font-bold">{item.title}</h3>}
                                     {isEditable ? <Textarea value={item.description || ''} onChange={e => handleListItemChange(section.id, index, 'description', e.target.value)} className="mt-2 bg-transparent border-0 p-0" rows={3} placeholder="Project description..." /> : <p className="text-muted-foreground mt-2">{item.description}</p>}
                                     {isEditable ? <Input value={item.tech || ''} onChange={e => handleListItemChange(section.id, index, 'tech', e.target.value)} className="mt-2" placeholder="Tech stack, comma-separated" /> : <p className="text-sm text-muted-foreground mt-2">{item.tech}</p>}
@@ -509,6 +525,48 @@ export default function PortfolioBuilderPage() {
                     </div>
                     {isEditable && <div className="text-center mt-8"><Button onClick={() => addListItem(section.id, 'projects')}><Plus className="mr-2 h-4 w-4"/> Add Project</Button></div>}
                 </div>
+            </SectionWrapper>
+        );
+        case 'testimonials': return (
+            <SectionWrapper id="testimonials">
+                 <div className="container mx-auto">
+                    {isEditable ? <EditableTitle value={content.title} onChange={e => handleContentChange(section.id, 'title', e.target.value)} /> : <Title>{content.title}</Title>}
+                    <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                        {(content.items || []).map((item: any, index: number) => (
+                             <Card key={item.id} className="group/item relative">
+                                {isEditable && <button onClick={() => removeListItem(section.id, index)} className="absolute top-2 right-2 h-6 w-6 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-4 w-4" /></button>}
+                                <CardContent className="p-4 flex flex-col items-center text-center">
+                                    <div className="relative mb-4">
+                                        <Image src={item.image || "https://placehold.co/100x100.png"} width={100} height={100} alt={item.author} className="rounded-full" data-ai-hint={item.hint || 'person portrait'}/>
+                                        {isEditable && item.image && <Watermark user={user} />}
+                                    </div>
+                                    {isEditable ? <Textarea value={item.quote || ''} onChange={e => handleListItemChange(section.id, index, 'quote', e.target.value)} className="italic text-muted-foreground mt-2 bg-transparent border-0 p-0 text-center" rows={3} placeholder="Quote..."/> : <blockquote className="italic text-muted-foreground">"{item.quote}"</blockquote>}
+                                    {isEditable ? <Input value={item.author || ''} onChange={e => handleListItemChange(section.id, index, 'author', e.target.value)} className="font-semibold mt-4 bg-transparent border-0 h-auto p-0 text-center" placeholder="Author name"/> : <p className="font-semibold mt-4">&mdash; {item.author}</p>}
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                    {isEditable && <div className="text-center mt-8"><Button onClick={() => addListItem(section.id, 'testimonials')}><Plus className="mr-2 h-4 w-4"/> Add Testimonial</Button></div>}
+                 </div>
+            </SectionWrapper>
+        );
+         case 'gallery': return (
+            <SectionWrapper id="gallery">
+                 <div className="container mx-auto">
+                    {isEditable ? <EditableTitle value={content.title} onChange={e => handleContentChange(section.id, 'title', e.target.value)} /> : <Title>{content.title}</Title>}
+                    <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+                        {(content.items || []).map((item: any, index: number) => (
+                             <div key={item.id} className="group/item relative break-inside-avoid">
+                                {isEditable && <button onClick={() => removeListItem(section.id, index)} className="absolute top-2 right-2 h-6 w-6 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-4 w-4" /></button>}
+                                <div className="relative">
+                                    <Image src={item.src || "https://placehold.co/600x400.png"} width={600} height={400} alt={item.alt} className="rounded-md w-full h-auto" data-ai-hint={item.hint || 'gallery image'}/>
+                                    {isEditable && item.src && <Watermark user={user} />}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    {isEditable && <div className="text-center mt-8"><Button onClick={() => addListItem(section.id, 'gallery')}><Plus className="mr-2 h-4 w-4"/> Add Image</Button></div>}
+                 </div>
             </SectionWrapper>
         );
         case 'contact': return (

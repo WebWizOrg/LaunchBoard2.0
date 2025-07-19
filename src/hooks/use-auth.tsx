@@ -1,3 +1,4 @@
+
 // src/hooks/use-auth.tsx
 'use client';
 
@@ -21,6 +22,8 @@ import { doc, setDoc, getDoc, serverTimestamp, collection, addDoc, updateDoc } f
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+export type { User } from 'firebase/auth';
 
 interface AuthContextType {
   user: User | null;

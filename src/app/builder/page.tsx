@@ -67,7 +67,7 @@ import html2canvas from 'html2canvas';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf';
 import { doc, getDoc, setDoc, onSnapshot, DocumentData, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, User as FirebaseUser } from '@/hooks/use-auth';
 import { debounce } from 'lodash';
 
 
@@ -307,6 +307,16 @@ export const defaultResumeData = {
     backgroundBlur: 0,
     backgroundBrightness: 100,
   }
+};
+
+const Watermark = ({ user }: { user: FirebaseUser | null }) => {
+    if (!user) return null;
+    return (
+        <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[8px] p-1 rounded-sm pointer-events-none z-20 opacity-70">
+            <p className="truncate">{user.displayName || user.email}</p>
+            <p className="truncate">{user.email}</p>
+        </div>
+    );
 };
 
 export default function BuilderPage() {
@@ -773,6 +783,7 @@ export default function BuilderPage() {
                                 className="rounded-full object-cover w-32 h-32 border-2"
                                 style={{borderColor: 'var(--resume-accent-color)'}}
                             />
+                            {isEditable && content.avatar && <Watermark user={user} />}
                             {isEditable &&
                             <>
                                 <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1053,6 +1064,7 @@ export default function BuilderPage() {
                               data-ai-hint="placeholder"
                               className="w-full h-auto object-cover border-2"
                           />
+                          {isEditable && content.src && <Watermark user={user} />}
                           {isEditable && 
                             <>
                                 <label htmlFor={`image-upload-${section.id}`} className="absolute inset-0 bg-black/50 flex items-center justify-center text-white cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1225,6 +1237,7 @@ export default function BuilderPage() {
                          {headerContent.showAvatar && (
                             <div className="relative group w-36 h-36 flex-shrink-0">
                                 <Image src={headerContent.avatar || 'https://placehold.co/144x144.png'} alt="Avatar" width={144} height={144} data-ai-hint="placeholder" className="rounded-full object-cover w-36 h-36 border-4" style={{borderColor: 'var(--resume-accent-color)'}}/>
+                                {isEditable && headerContent.avatar && <Watermark user={user} />}
                                 {isEditable && <>
                                 <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"> <ImageIcon className="h-8 w-8" /> </label>
                                 <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
@@ -1327,7 +1340,12 @@ export default function BuilderPage() {
                     <div className='w-[30%] bg-muted/30 p-6'>
                         {headerSection && 
                             <div className="mb-6 text-center">
-                                {headerContent.showAvatar && <Image src={headerContent.avatar || 'https://placehold.co/128x128.png'} alt="Avatar" width={128} height={128} data-ai-hint="placeholder" className="rounded-full object-cover w-32 h-32 mx-auto mb-4 border-2 border-primary" />}
+                                {headerContent.showAvatar && (
+                                    <div className="relative">
+                                        <Image src={headerContent.avatar || 'https://placehold.co/128x128.png'} alt="Avatar" width={128} height={128} data-ai-hint="placeholder" className="rounded-full object-cover w-32 h-32 mx-auto mb-4 border-2 border-primary" />
+                                        {isEditable && headerContent.avatar && <Watermark user={user} />}
+                                    </div>
+                                )}
                                 {!isEditable ? (
                                     <>
                                         <h1 className="text-2xl font-bold">{headerContent.name}</h1>
@@ -1403,6 +1421,7 @@ export default function BuilderPage() {
                                     data-ai-hint="placeholder"
                                     className="rounded-full object-cover w-36 h-36 border-4 border-current"
                                 />
+                                {isEditable && headerContent.avatar && <Watermark user={user} />}
                                 {isEditable && <>
                                 <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                                     <ImageIcon className="h-8 w-8" />
