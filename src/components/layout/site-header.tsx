@@ -16,7 +16,7 @@ export function SiteHeader() {
     { name: "Dashboard", href: "/dashboard" },
   ]
   // In a real app, you'd get this from a session provider
-  const isLoggedIn = true;
+  const isLoggedIn = false;
 
   if (pathname.startsWith('/login') || pathname.startsWith('/signup')) {
       return null;
