@@ -1,3 +1,4 @@
+
 // src/app/builder/page.tsx
 'use client';
 
@@ -10,6 +11,7 @@ import {
   useSensor,
   useSensors,
   DragOverlay,
+  useDroppable,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -124,10 +126,10 @@ const allSectionsMap = new Map(
 );
 
 const templates = [
-  { name: 'Minimalist', image: 'https://placehold.co/150x212' },
-  { name: 'Modern', image: 'https://placehold.co/150x212' },
-  { name: 'Creative', image: 'https://placehold.co/150x212' },
-  { name: 'Academic', image: 'https://placehold.co/150x212' },
+  { name: 'Minimalist', image: 'https://placehold.co/150x212.png', hint: 'resume template' },
+  { name: 'Modern', image: 'https://placehold.co/150x212.png', hint: 'modern resume' },
+  { name: 'Creative', image: 'https://placehold.co/150x212.png', hint: 'creative resume' },
+  { name: 'Academic', image: 'https://placehold.co/150x212.png', hint: 'academic resume' },
 ];
 
 const fonts = [
@@ -185,6 +187,22 @@ function SortableResumeSection({ id, children, onRemove }) {
     </div>
   );
 }
+
+const DroppableCanvas = ({ children }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: 'resume-canvas-droppable' });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'space-y-4 rounded-lg',
+        isOver && 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
 
 const createNewItem = (itemType) => {
     const common = { id: `${itemType}_item_${Date.now()}` };
@@ -348,14 +366,16 @@ export default function BuilderPage() {
   const handleDragEnd = (event) => {
     const { active, over } = event;
     setActiveId(null);
-
+  
     if (!over) return;
-
+  
     const isSidebarItem = allSectionsMap.has(active.id);
     const isCanvasItem = resumeSectionsIds.includes(active.id);
+  
     const isDroppingOnCanvas = over.id === 'resume-canvas-droppable';
-
-    if (isSidebarItem && isDroppingOnCanvas) {
+    const isDroppingOnCanvasItem = resumeSectionsIds.includes(over.id);
+  
+    if (isSidebarItem && (isDroppingOnCanvas || isDroppingOnCanvasItem)) {
       const newSectionType = active.id;
       const newSectionId = `${newSectionType}_${Date.now()}`;
       const newSectionData = { id: newSectionId, type: newSectionType };
@@ -363,26 +383,22 @@ export default function BuilderPage() {
       let defaultContent = { title: allSectionsMap.get(newSectionType)?.name || 'New Section' };
       if (newSectionType === 'line_break' || newSectionType === 'subtitle') {
           defaultContent = { text: '' };
-      }
-      
-      if (['experience', 'education', 'projects', 'certifications'].includes(newSectionType)) {
+      } else if (['experience', 'education', 'projects', 'certifications'].includes(newSectionType)) {
           defaultContent.items = [];
-      } else if (newSectionType === 'header') { // This shouldn't happen, but as a fallback
+      } else if (newSectionType === 'header') {
           defaultContent.name = 'Your Name';
           defaultContent.tagline = 'Your Role';
           defaultContent.avatar = '';
       }
-
+  
       setResumeData(prev => ({
           sections: [...prev.sections, newSectionData],
           content: { ...prev.content, [newSectionId]: defaultContent }
       }));
-    } else if (isCanvasItem && resumeSectionsIds.includes(over.id)) {
-      // Reordering an existing item on the canvas
+    } else if (isCanvasItem && isDroppingOnCanvasItem) {
       if (active.id !== over.id) {
         const activeIndex = resumeData.sections.findIndex(s => s.id === active.id);
         const overIndex = resumeData.sections.findIndex(s => s.id === over.id);
-    
         setResumeData((prev) => ({
           ...prev,
           sections: arrayMove(prev.sections, activeIndex, overIndex),
@@ -459,10 +475,11 @@ export default function BuilderPage() {
           <div className="text-center flex flex-col items-center gap-4">
               <div className="relative group w-32 h-32">
                   <Image
-                      src={content.avatar || 'https://placehold.co/128x128'}
+                      src={content.avatar || 'https://placehold.co/128x128.png'}
                       alt="Avatar"
                       width={128}
                       height={128}
+                      data-ai-hint="placeholder"
                       className="rounded-full object-cover w-32 h-32 border-2 border-primary/50"
                   />
                   <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
@@ -623,7 +640,7 @@ export default function BuilderPage() {
                     {templates.map(template => (
                       <button key={template.name} className="block text-left group">
                       <Card className="overflow-hidden cursor-pointer group-hover:border-primary transition-all border-2 border-transparent group-focus:border-primary group-focus:ring-2 group-focus:ring-primary/50">
-                        <Image src={template.image} alt={template.name} width={150} height={212} className="w-full h-auto object-cover" />
+                        <Image src={template.image} alt={template.name} width={150} height={212} className="w-full h-auto object-cover" data-ai-hint={template.hint} />
                         <p className="p-2 text-sm text-center font-medium bg-card">{template.name}</p>
                       </Card>
                       </button>
@@ -735,28 +752,28 @@ export default function BuilderPage() {
                 <Card className="w-full aspect-[8.5/11] shadow-lg transition-colors duration-300 relative overflow-hidden" id="resume-preview-wrapper" style={resumeStyle}>
                     <div className="absolute inset-0 transition-all" style={resumeBgStyle}></div>
                     <CardContent id="resume-preview" className="p-8 text-foreground relative h-full">
-                    <SortableContext id="resume-canvas-droppable" items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
-                      <div className="space-y-4">
-                        {resumeData.sections.map((section) => (
-                           <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
-                            {renderSection(section)}
-                          </SortableResumeSection>
-                        ))}
-                      </div>
-                    </SortableContext>
+                    <DroppableCanvas>
+                      <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                          {resumeData.sections.map((section) => (
+                             <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
+                              {renderSection(section)}
+                            </SortableResumeSection>
+                          ))}
+                      </SortableContext>
+                    </DroppableCanvas>
                   </CardContent>
                 </Card>
               </div>
             </ScrollArea>
           </main>
           <DragOverlay>
-            {activeId && allSectionsMap.has(activeId.split('_')[0]) ? (
+            {activeId && allSectionsMap.has(activeId) ? (
               <Card
                 className='flex items-center p-2 cursor-grabbing opacity-80'
               >
                 <GripVertical className="h-5 w-5 mr-2 text-muted-foreground" />
-                {React.cloneElement(allSectionsMap.get(activeId.split('_')[0]).icon, { className: 'h-5 w-5 mr-3 text-primary' })}
-                <span className="text-sm font-medium">{allSectionsMap.get(activeId.split('_')[0]).name}</span>
+                {React.cloneElement(allSectionsMap.get(activeId).icon, { className: 'h-5 w-5 mr-3 text-primary' })}
+                <span className="text-sm font-medium">{allSectionsMap.get(activeId).name}</span>
               </Card>
             ) : null}
           </DragOverlay>
