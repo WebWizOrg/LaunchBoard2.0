@@ -13,6 +13,14 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
+import { ReadOnlySection } from '@/components/portfolio-templates';
 
 export function ReadOnlyPortfolio({ portfolioId }: { portfolioId: string }) {
   const [portfolioData, setPortfolioData] = useState<DocumentData | null>(null);
@@ -51,123 +59,88 @@ export function ReadOnlyPortfolio({ portfolioId }: { portfolioId: string }) {
     fetchPortfolio();
   }, [portfolioId]);
 
-    const renderSectionComponent = (section: any) => {
-    const content = portfolioData.content[section.id] || {};
-
-    const SectionWrapper = ({children, id, className}: {children: React.ReactNode, id: string, className?: string}) => <section id={id} className={cn("w-full px-8 py-12 md:px-16 md:py-20", className)}>{children}</section>;
-    const Title = ({children}: {children: React.ReactNode}) => <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-8 text-center">{children}</h2>;
-
-    switch (section.type) {
-        case 'header': return (
-            <header className="w-full h-[60vh] flex items-center justify-center text-center px-8" style={{ background: 'linear-gradient(to right, #0f2027, #203a43, #2c5364)' }}>
-                <div className="space-y-4 text-white">
-                    <h1 className="text-5xl font-extrabold tracking-tighter sm:text-6xl md:text-7xl">{content.title}</h1>
-                    <p className="max-w-[700px] mx-auto text-lg md:text-xl">{content.tagline}</p>
-                    <div className="flex gap-4 justify-center">
-                        <Button asChild size="lg"><a href={content.buttonLink}>{content.buttonText}</a></Button>
-                    </div>
-                </div>
-            </header>
-        );
-        case 'about': return (
-            <SectionWrapper id="about">
-                <div className="container mx-auto grid items-center gap-8 md:grid-cols-2">
-                    <div className="space-y-4">
-                        <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">{content.title}</h2>
-                        <p className="text-muted-foreground">{content.text}</p>
-                    </div>
-                    <Image src={content.image || "https://placehold.co/400x400.png"} width={400} height={400} alt="About Me" className="mx-auto rounded-lg" data-ai-hint={content.hint || 'person portrait'}/>
-                </div>
-            </SectionWrapper>
-        );
-        case 'projects': return (
-            <SectionWrapper id="projects">
-                <div className="container mx-auto">
-                    <Title>{content.title}</Title>
-                    <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                        {(content.items || []).map((item: any, index: number) => (
-                            <Card key={index}>
-                                <CardContent className="p-4">
-                                    <Image src={item.image || "https://placehold.co/600x400.png"} width={600} height={400} alt={item.title} className="rounded-md mb-4" data-ai-hint={item.hint || 'project screenshot'}/>
-                                    <h3 className="text-xl font-bold">{item.title}</h3>
-                                    <p className="text-muted-foreground mt-2">{item.description}</p>
-                                    <p className="text-sm text-muted-foreground mt-2">{item.tech}</p>
-                                    <Button asChild variant="link" className="mt-4 p-0"><a href={item.link}>View Project <ArrowRight className="ml-2 h-4 w-4" /></a></Button>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-            </SectionWrapper>
-        );
-        case 'contact': return (
-            <SectionWrapper id="contact">
-                <div className="container mx-auto max-w-2xl text-center">
-                    <Title>{content.title}</Title>
-                    <p className="text-muted-foreground">{content.text}</p>
-                    <div className="mt-6 flex justify-center gap-4">
-                        <Button asChild><a href={`mailto:${content.email || ''}`}><Mail className="mr-2 h-4 w-4" /> Email Me</a></Button>
-                        <Button asChild variant="secondary"><a href={content.linkedin || '#'} target="_blank"><Linkedin className="mr-2 h-4 w-4" /> LinkedIn</a></Button>
-                    </div>
-                </div>
-            </SectionWrapper>
-        );
-        case 'line_break':
-                return <Separator className="my-12" />;
-        default: return (
-            <SectionWrapper id={section.type}>
-                <div className="container mx-auto">
-                    <Title>{content.title || section.type}</Title>
-                    <div className="text-center text-muted-foreground">
-                        <p>{content.text}</p>
-                    </div>
-                </div>
-            </SectionWrapper>
-        );
-    }
-  };
 
   const renderTemplate = () => {
     const styling = portfolioData?.styling || defaultPortfolioData.styling;
+    const allSections = portfolioData?.sections || [];
 
+     if (styling.template === 'zen-slide') {
+      return (
+        <Carousel className="w-full h-screen" opts={{ align: 'start', loop: true }}>
+          <CarouselContent className="-ml-0 h-full">
+            {allSections.map((section: any) => (
+              <CarouselItem key={section.id} className="pl-0">
+                <div className="w-full h-full flex items-center justify-center p-6">
+                  <ReadOnlySection section={section} portfolioData={portfolioData} />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="left-4" />
+          <CarouselNext className="right-4" />
+        </Carousel>
+      );
+    }
+
+    if (styling.template === 'terminal') {
+      return (
+        <div className="font-mono bg-black text-green-400 min-h-screen p-4 md:p-8 relative">
+           <div className="absolute inset-0 bg-black/20" style={{ backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0, 255, 0, 0.1) 1px, rgba(0, 255, 0, 0.1) 2px)`, pointerEvents: 'none' }}></div>
+          <div className="relative">
+            {allSections.map((section: any) => (
+              <ReadOnlySection key={section.id} section={section} portfolioData={portfolioData} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    
     if (styling.template === 'split-showcase') {
         const sidebarSections = ['about', 'skills', 'contact'];
         const mainSections = ['header', 'projects', 'experience', 'testimonials'];
         
-        const sidebarContent = portfolioData.sections.filter(s => sidebarSections.includes(s.type));
-        const mainContent = portfolioData.sections.filter(s => mainSections.includes(s.type));
+        const sidebarContent = allSections.filter(s => sidebarSections.includes(s.type));
+        const mainContent = allSections.filter(s => mainSections.includes(s.type));
 
         return (
             <div className='flex flex-col md:flex-row min-h-screen'>
                 <aside className="w-full md:w-1/3 md:h-screen md:sticky top-0 p-8 md:p-12 flex flex-col gap-8 border-r">
                     {sidebarContent.map((section: any) => (
-                        <div key={section.id}>{renderSectionComponent(section)}</div>
+                        <ReadOnlySection key={section.id} section={section} portfolioData={portfolioData} />
                     ))}
                 </aside>
                 <main className='w-full md:w-2/3'>
                     {mainContent.map((section: any) => (
-                        <div key={section.id}>{renderSectionComponent(section)}</div>
+                        <ReadOnlySection key={section.id} section={section} portfolioData={portfolioData} />
                     ))}
                 </main>
             </div>
         );
     }
     
-    if (styling.template === 'terminal') {
-        return (
-            <div className="font-mono bg-black text-green-400 min-h-screen p-4 md:p-8">
-                {portfolioData.sections.map((section: any) => (
-                    <div key={section.id}>{renderSectionComponent(section)}</div>
-                ))}
-            </div>
-        );
+    if (styling.template === 'magazine-spread') {
+      return (
+        <div className="p-4 md:p-8 grid grid-cols-1 md:grid-cols-6 gap-4">
+          {allSections.map((section, index) => {
+            const colSpan = (index % 5 === 0 || index % 5 === 3) ? 'md:col-span-3' : 'md:col-span-2';
+            const rowSpan = (index % 5 === 0) ? 'md:row-span-2' : 'md:row-span-1';
+            return (
+              <div key={section.id} className={cn(colSpan, rowSpan, 'min-h-[200px]')}>
+                  <div className="h-full w-full p-4 border rounded-lg bg-background/50 flex items-center justify-center">
+                    <ReadOnlySection section={section} portfolioData={portfolioData} />
+                  </div>
+              </div>
+            );
+          })}
+        </div>
+      );
     }
 
-    // Default template (modern-dark)
+    // Default template (modern-dark) and others
     return (
         <div className="bg-[#111827] text-white">
             {portfolioData.sections.map((section: any) => (
-                <div key={section.id}>{renderSectionComponent(section)}</div>
+                <ReadOnlySection key={section.id} section={section} portfolioData={portfolioData} />
             ))}
         </div>
     );

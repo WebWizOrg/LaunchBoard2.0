@@ -94,6 +94,14 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { generateProjectFromRepo } from '@/ai/flows/generate-project-from-repo';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
+
 
 // Wrapper to prevent hydration errors
 function ClientOnly({ children }: { children: React.ReactNode }) {
@@ -131,7 +139,15 @@ const templates = [
   { name: 'Split Showcase', id: 'split-showcase', image: 'https://placehold.co/200x150.png', hint: 'split portfolio' },
   { name: 'Terminal', id: 'terminal', image: 'https://placehold.co/200x150.png', hint: 'terminal portfolio' },
   { name: 'Modern Dark', id: 'modern-dark', image: 'https://placehold.co/200x150.png', hint: 'dark portfolio' },
+  { name: 'Zen Slide', id: 'zen-slide', image: 'https://placehold.co/200x150.png', hint: 'horizontal scroll' },
+  { name: 'Magazine Spread', id: 'magazine-spread', image: 'https://placehold.co/200x150.png', hint: 'editorial layout' },
+  { name: 'Minimalist Card Grid', id: 'minimalist-card-grid', image: 'https://placehold.co/200x150.png', hint: 'card grid' },
+  { name: 'Floating Tiles', id: 'floating-tiles', image: 'https://placehold.co/200x150.png', hint: 'interactive tiles' },
+  { name: 'Retro 90s OS', id: 'retro-90s-os', image: 'https://placehold.co/200x150.png', hint: 'retro interface' },
+  { name: 'Dynamic Timeline', id: 'dynamic-timeline', image: 'https://placehold.co/200x150.png', hint: 'timeline resume' },
+  { name: 'Video Hero Intro', id: 'video-hero-intro', image: 'https://placehold.co/200x150.png', hint: 'video background' },
 ];
+
 
 const DraggableSection = ({ id, name, icon }: {id: string, name: string, icon: React.ReactElement}) => {
   const { attributes, listeners, setNodeRef, isDragging } = useSortable({ id });
@@ -153,7 +169,7 @@ function SortableSection({ id, children, onRemove, isPreviewing }: {id: string, 
     };
   
     return (
-      <div ref={setNodeRef} style={style} className="relative group/section bg-background">
+      <div ref={setNodeRef} style={style} className="relative group/section bg-transparent">
          {!isPreviewing && (
           <>
             <div {...attributes} {...listeners} className="absolute -left-7 top-1/2 -translate-y-1/2 p-1 bg-background border rounded-md shadow-md opacity-0 group-hover/section:opacity-100 transition-opacity cursor-grab z-20">
@@ -527,16 +543,54 @@ export default function PortfolioBuilderPage() {
   const renderTemplate = (isPublicView = false) => {
     const styling = portfolioData?.styling || defaultPortfolioData.styling;
     const isEditable = !isPreviewing && !isPublicView;
+    const allSections = portfolioData.sections;
 
+    if (styling.template === 'zen-slide') {
+      return (
+        <Carousel className="w-full h-full" opts={{ align: 'start', loop: true }}>
+          <CarouselContent className="-ml-0 h-full">
+            {allSections.map((section: any, index: number) => (
+              <CarouselItem key={section.id} className="pl-0">
+                <div className="w-full h-full flex items-center justify-center p-6">
+                  <SortableSection id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
+                    {renderSectionComponent(section, isPublicView)}
+                  </SortableSection>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="left-4" />
+          <CarouselNext className="right-4" />
+        </Carousel>
+      );
+    }
+
+    if (styling.template === 'terminal') {
+      return (
+        <div className="font-mono bg-black text-green-400 min-h-full p-4 md:p-8 relative">
+          <div className="absolute inset-0 bg-black/20" style={{ backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0, 255, 0, 0.1) 1px, rgba(0, 255, 0, 0.1) 2px)`, pointerEvents: 'none' }}></div>
+          <div className="relative">
+            <SortableContext items={portfolioSectionsIds} strategy={verticalListSortingStrategy} disabled={isEditable}>
+              {allSections.map((section: any) => (
+                <SortableSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
+                  {renderSectionComponent(section, isPublicView)}
+                </SortableSection>
+              ))}
+            </SortableContext>
+          </div>
+        </div>
+      );
+    }
+    
     if (styling.template === 'split-showcase') {
         const sidebarSections = ['about', 'skills', 'contact'];
         const mainSections = ['header', 'projects', 'experience', 'testimonials'];
         
-        const sidebarContent = portfolioData.sections.filter(s => sidebarSections.includes(s.type));
-        const mainContent = portfolioData.sections.filter(s => mainSections.includes(s.type));
+        const sidebarContent = allSections.filter(s => sidebarSections.includes(s.type));
+        const mainContent = allSections.filter(s => mainSections.includes(s.type));
 
         return (
-            <div className='flex flex-col md:flex-row min-h-screen'>
+            <div className='flex flex-col md:flex-row min-h-full'>
                 <aside className="w-full md:w-1/3 md:h-screen md:sticky top-0 p-8 md:p-12 flex flex-col gap-8 border-r">
                      <SortableContext items={portfolioSectionsIds} strategy={verticalListSortingStrategy} disabled={isEditable}>
                         {sidebarContent.map((section: any) => (
@@ -558,27 +612,32 @@ export default function PortfolioBuilderPage() {
             </div>
         );
     }
-    
-    if (styling.template === 'terminal') {
-        return (
-            <div className="font-mono bg-black text-green-400 min-h-screen p-4 md:p-8">
-                 <SortableContext items={portfolioSectionsIds} strategy={verticalListSortingStrategy} disabled={isEditable}>
-                    {portfolioData.sections.map((section: any) => (
-                         <SortableSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
-                             {/* You would create specific terminal-style components here */}
-                            {renderSectionComponent(section, isPublicView)}
-                        </SortableSection>
-                    ))}
-                </SortableContext>
-            </div>
-        );
-    }
 
-    // Default template (modern-dark)
+    if (styling.template === 'magazine-spread') {
+      return (
+        <div className="p-4 md:p-8 grid grid-cols-1 md:grid-cols-6 gap-4">
+          {allSections.map((section, index) => {
+            const colSpan = (index % 5 === 0 || index % 5 === 3) ? 'md:col-span-3' : 'md:col-span-2';
+            const rowSpan = (index % 5 === 0) ? 'md:row-span-2' : 'md:row-span-1';
+            return (
+              <div key={section.id} className={cn(colSpan, rowSpan, 'min-h-[200px]')}>
+                <SortableSection id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
+                  <div className="h-full w-full p-4 border rounded-lg bg-background/50 flex items-center justify-center">
+                    {renderSectionComponent(section, isPublicView)}
+                  </div>
+                </SortableSection>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+    
+    // Fallback/Default template (modern-dark)
     return (
         <div className="bg-[#111827] text-white">
             <SortableContext items={portfolioSectionsIds} strategy={verticalListSortingStrategy} disabled={isEditable}>
-                {portfolioData.sections.map((section: any) => (
+                {allSections.map((section: any) => (
                     <SortableSection key={section.id} id={section.id} onRemove={removeSection} isPreviewing={isPreviewing}>
                         {renderSectionComponent(section, isPublicView)}
                     </SortableSection>
@@ -724,8 +783,8 @@ export default function PortfolioBuilderPage() {
                 </div>
               </header>
               <ScrollArea className="flex-1 bg-muted">
-                  <div className={cn("mx-auto transition-all", isPreviewing ? 'w-full' : 'w-[90%] max-w-7xl py-8')}>
-                      <div className={cn("shadow-lg overflow-hidden", isPreviewing ? 'h-full' : 'rounded-lg border')} style={portfolioStyle}>
+                  <div className={cn("mx-auto transition-all w-full", isPreviewing ? '' : 'max-w-7xl py-8')}>
+                      <div className={cn("shadow-lg bg-background", isPreviewing ? 'h-full' : 'rounded-lg border')} style={portfolioStyle}>
                         <DroppableCanvas>
                             {renderTemplate()}
                         </DroppableCanvas>
