@@ -1,4 +1,4 @@
-// src/app/builder/layout.tsx
+// src/app/dashboard/layout.tsx
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
-export default function BuilderLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;

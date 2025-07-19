@@ -1,25 +1,41 @@
 "use client";
 
 import Link from "next/link"
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Rocket } from "lucide-react"
+import { Menu, Rocket, LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/hooks/use-auth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, signOut, loading } = useAuth();
+  
   const navLinks = [
     { name: "Builder", href: "/builder" },
     { name: "Marketplace", href: "/#marketplace" },
     { name: "Dashboard", href: "/dashboard" },
   ]
-  // In a real app, you'd get this from a session provider
-  const isLoggedIn = false;
 
   if (pathname.startsWith('/login') || pathname.startsWith('/signup')) {
       return null;
+  }
+  
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/');
   }
 
   return (
@@ -76,22 +92,52 @@ export function SiteHeader() {
           </div>
           
           <div className="flex items-center gap-2">
-            {isLoggedIn ? (
-               pathname.startsWith('/builder') ? null :
-              <Link href="/dashboard" className={cn(buttonVariants({ variant: "default" }))}>
-                Dashboard
-              </Link>
-            ) : (
-               !pathname.startsWith('/builder') && (
-                <>
-                  <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }))}>
-                    Log in
-                  </Link>
-                  <Link href="/signup" className={cn(buttonVariants({ variant: "default" }), "bg-primary hover:bg-primary/90 text-primary-foreground")}>
-                    Sign Up
-                  </Link>
-                </>
-              )
+            {!loading && (
+              <>
+                {user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                       <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                         <Avatar className="h-8 w-8">
+                           <AvatarImage src={user.photoURL || ''} alt={user.displayName || ''} />
+                           <AvatarFallback>{user.displayName ? user.displayName.charAt(0) : user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                         </Avatar>
+                       </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+                          Dashboard
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push('/settings')}>
+                          Settings
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleSignOut}>
+                          <LogOut className="mr-2 h-4 w-4" />
+                          <span>Log out</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  !pathname.startsWith('/builder') && (
+                    <>
+                      <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }))}>
+                        Log in
+                      </Link>
+                      <Link href="/signup" className={cn(buttonVariants({ variant: "default" }), "bg-primary hover:bg-primary/90 text-primary-foreground")}>
+                        Sign Up
+                      </Link>
+                    </>
+                  )
+                )}
+              </>
             )}
             <ThemeToggle />
           </div>
