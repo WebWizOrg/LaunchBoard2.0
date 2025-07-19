@@ -32,7 +32,6 @@ import {
   Share,
   Sparkles,
   Star,
-  Switch,
   Twitter,
   Type,
   User,
@@ -78,8 +77,8 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
     fetchResume();
   }, [resumeId]);
 
-  const renderSectionComponent = (section, templateContext = {}) => {
-        const content = resumeData.content[section.id] || {};
+  const renderSectionComponent = (section: any, templateContext: any = {}) => {
+        const content = resumeData?.content[section.id] || {};
         const { isAccentBg = false, isPublicView = true } = templateContext;
         const isEditable = !isPublicView; // Always false here
 
@@ -88,11 +87,11 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
             if (['experience', 'projects', 'education', 'certifications', 'links', 'recommendations', 'skills', 'socials', 'publications'].includes(section.type) && (!content.items || content.items.length === 0) && !content.text) return null;
         }
 
-        const TitleComponent = ({value, icon: Icon, className, ...props}) => {
+        const TitleComponent = ({value, icon: Icon, className, ...props}: {value: string, icon: React.ElementType, className?: string, titleClass?: string}) => {
             const { titleClass } = props; 
             return (
                 <div className="flex items-center gap-3 mb-2">
-                    {Icon && <Icon className="h-6 w-6" style={{ color: isAccentBg ? resumeData.styling.accentTextColor : resumeData.styling.accentColor }} />}
+                    {Icon && <Icon className="h-6 w-6" style={{ color: isAccentBg ? resumeData?.styling.accentTextColor : resumeData?.styling.accentColor }} />}
                     <div className={cn("text-xl font-bold w-full", titleClass, className)}>{value}</div>
                 </div>
             )
@@ -111,7 +110,7 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
                                 height={128}
                                 data-ai-hint="placeholder"
                                 className="rounded-full object-cover w-32 h-32 border-2"
-                                style={{borderColor: resumeData.styling.accentColor}}
+                                style={{borderColor: resumeData?.styling.accentColor}}
                             />
                         </div>
                     )}
@@ -136,7 +135,7 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
                     <div className="mt-6">
                         <TitleComponent value={content.title || 'Socials'} icon={Share} titleClass={templateContext.titleClass} />
                         <div className="space-y-2">
-                            {content.items.map((item, index) => (
+                            {content.items.map((item: any, index: number) => (
                                 <div key={index} className="flex items-center gap-2 text-sm">
                                     {item.platform === 'linkedin' && <Linkedin className="h-4 w-4" />}
                                     {item.platform === 'github' && <Github className="h-4 w-4" />}
@@ -162,7 +161,7 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
                 <div className="mt-6">
                      <TitleComponent value={content.title} icon={Quote} titleClass={templateContext.titleClass}/>
                      <div className="space-y-4">
-                         {content.items.map((item, index) => (
+                         {content.items.map((item: any, index: number) => (
                              <div key={index} className="pl-4 border-l-2 border-border/50">
                                  <blockquote className="text-sm italic">"{item.text}"</blockquote>
                                  <cite className="block text-right font-semibold not-italic mt-2">&mdash; {item.author}</cite>
@@ -177,13 +176,13 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
           case 'certifications':
           case 'links':
             if (!content.items || content.items.length === 0) return null;
-            const itemTypeMap = { experience: {icon: Briefcase}, projects: {icon: Code}, education: {icon: GraduationCap}, certifications: {icon: Award}, links: {icon: LinkIcon}};
+            const itemTypeMap: {[key: string]: {icon: React.ElementType}} = { experience: {icon: Briefcase}, projects: {icon: Code}, education: {icon: GraduationCap}, certifications: {icon: Award}, links: {icon: LinkIcon}};
             const itemConfig = itemTypeMap[section.type];
             return (
                 <div className="mt-6">
                      <TitleComponent value={content.title} icon={itemConfig.icon} titleClass={templateContext.titleClass}/>
                      <div className="space-y-4">
-                         {content.items.map((item, index) => (
+                         {content.items.map((item: any, index: number) => (
                              <div key={index} className="pl-4 border-l-2 border-border/50">
                                 {section.type === 'education' && <><p className="font-semibold">{item.institution}</p><p>{item.degree}</p></>}
                                 {section.type === 'experience' && <><p className="font-semibold">{item.company}</p><p>{item.role}</p></>}
@@ -204,10 +203,10 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
                  <TitleComponent value={content.title} icon={Sparkles} titleClass={templateContext.titleClass}/>
                  {templateContext.variant === 'creative' ? (
                      <div className="space-y-4">
-                         {content.items.map((item, index) => (
+                         {content.items.map((item: any, index: number) => (
                              <div key={index} className="flex items-center gap-4">
                                 <p className="w-1/3">{item.skill}</p>
-                                <Progress value={item.level} style={{accentColor: resumeData.styling.accentColor}} />
+                                <Progress value={item.level} style={{accentColor: resumeData?.styling.accentColor}} />
                              </div>
                          ))}
                      </div>
@@ -218,7 +217,7 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
            case 'achievements':
            case 'publications':
             if(!content.text) return null;
-            const textIconMap = { languages: Languages, achievements: Star, publications: Book };
+            const textIconMap: {[key: string]: React.ElementType} = { languages: Languages, achievements: Star, publications: Book };
             return (
               <div className="mt-6">
                  <TitleComponent value={content.title} icon={textIconMap[section.type]} titleClass={templateContext.titleClass} />
@@ -244,19 +243,19 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
         }
     };
   
-  const renderTemplate = (resumeData) => {
-    const { sections, styling } = resumeData;
+  const renderTemplate = (resumeDataToRender: DocumentData) => {
+    const { sections, styling } = resumeDataToRender;
     const templateId = styling.template;
 
     if (templateId === 'classic') {
-          const headerSection = sections.find(s => s.type === 'header');
-          const headerContent = headerSection ? resumeData.content[headerSection.id] : {};
-          const contactSection = sections.find(s => s.type === 'contact');
-          const contactContent = contactSection ? resumeData.content[contactSection.id] : {};
-          const socialsSection = sections.find(s => s.type === 'socials');
-          const socialItems = socialsSection ? (resumeData.content[socialsSection.id]?.items || []) : [];
-          const githubItem = socialItems.find(i => i.platform === 'github');
-          const linkedinItem = socialItems.find(i => i.platform === 'linkedin');
+          const headerSection = sections.find((s: any) => s.type === 'header');
+          const headerContent = headerSection ? resumeDataToRender.content[headerSection.id] : {};
+          const contactSection = sections.find((s: any) => s.type === 'contact');
+          const contactContent = contactSection ? resumeDataToRender.content[contactSection.id] : {};
+          const socialsSection = sections.find((s: any) => s.type === 'socials');
+          const socialItems = socialsSection ? (resumeDataToRender.content[socialsSection.id]?.items || []) : [];
+          const githubItem = socialItems.find((i: any) => i.platform === 'github');
+          const linkedinItem = socialItems.find((i: any) => i.platform === 'linkedin');
 
           return (
             <div className="p-10 space-y-6">
@@ -270,7 +269,7 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
                 </div>
               </header>
               <Separator className="bg-border/30" />
-              {sections.filter(s => s.type !== 'header' && s.type !== 'contact' && s.type !== 'socials').map((section) => renderSectionComponent(section))}
+              {sections.filter((s: any) => s.type !== 'header' && s.type !== 'contact' && s.type !== 'socials').map((section: any) => <div key={section.id}>{renderSectionComponent(section)}</div>)}
             </div>
           );
     }
@@ -278,7 +277,7 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
     // Default/Fallback template renderer
     return (
         <div className="p-8">
-            {sections.map((section) => (
+            {sections.map((section: any) => (
                 <div key={section.id}>
                     {renderSectionComponent(section)}
                 </div>
@@ -305,7 +304,7 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
     '--resume-accent-text-color': styling.accentTextColor,
     '--resume-background': theme === 'dark' ? styling.backgroundColorDark : styling.backgroundColorLight,
     '--resume-foreground': theme === 'dark' ? '#f8f8f8' : '#111111',
-    '--font-headline': styling.fontFamily, // Assuming headline and body font are the same for simplicity on share page
+    '--font-headline': styling.fontFamily,
     fontFamily: styling.fontFamily,
     backgroundColor: 'var(--resume-background)',
     color: 'var(--resume-foreground)',
@@ -331,13 +330,10 @@ function ReadOnlyResume({ resumeId }: { resumeId: string }) {
 }
 
 export default function SharePage({ params }: { params: { id: string } }) {
-  // We extract the id from params here in the Server Component.
-  const { id } = params;
-
   // We pass the id as a plain string prop to the Client Component.
   return (
     <div className="flex justify-center items-center min-h-screen bg-muted/40 p-4 sm:p-8">
-      <ReadOnlyResume resumeId={id} />
+      <ReadOnlyResume resumeId={params.id} />
     </div>
   );
 }
