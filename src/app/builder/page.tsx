@@ -48,6 +48,7 @@ import {
   User,
   Video,
   X,
+  Image as ImageIcon,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -66,6 +67,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getAiPoweredResumeRecommendations } from '@/ai/flows/smart-recommendations';
@@ -125,6 +133,10 @@ const fonts = [
   { name: 'Roboto', family: 'var(--font-roboto)' },
   { name: 'Lato', family: 'var(--font-lato)' },
   { name: 'Montserrat', family: 'var(--font-montserrat)' },
+  { name: 'Poppins', family: 'var(--font-poppins)' },
+  { name: 'Open Sans', family: 'var(--font-open-sans)' },
+  { name: 'Merriweather', family: 'var(--font-merriweather)' },
+  { name: 'Playfair Display', family: 'var(--font-playfair-display)' },
 ];
 
 function DraggableSection({ id, name, icon }) {
@@ -189,9 +201,9 @@ export default function BuilderPage() {
       backgroundColorLight: '#ffffff',
       backgroundColorDark: '#111827',
       fontFamily: 'var(--font-inter)',
+      backgroundImage: '',
   });
 
-  const [activeFont, setActiveFont] = useState(fonts[0].family);
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -205,8 +217,18 @@ export default function BuilderPage() {
   };
 
   const handleFontChange = (fontFamily) => {
-    setActiveFont(fontFamily);
     handleStyleChange('fontFamily', fontFamily);
+  };
+
+  const handleBackgroundImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handleStyleChange('backgroundImage', reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleDragStart = (event) => setActiveId(event.active.id);
@@ -216,25 +238,34 @@ export default function BuilderPage() {
     setActiveId(null);
     if (!over) return;
   
+    // This is the ID of the droppable container for the resume canvas
+    const resumeCanvasDroppableId = 'resume-canvas-droppable';
+    
     const isSidebarItem = allSectionsMap.has(active.id);
-    const isOverCanvas = over.id === 'resume-canvas-container' || over.id === 'resume-canvas' || resumeSectionsIds.includes(over.id);
+    // Check if dropping over the droppable container OR any existing item on the canvas
+    const isOverCanvas = over.id === resumeCanvasDroppableId || resumeSectionsIds.includes(over.id);
   
-    if (isSidebarItem && isOverCanvas && !resumeSectionsIds.includes(active.id)) {
+    if (isSidebarItem && isOverCanvas) {
+      // Adding a new item from the sidebar
       const newSection = allSectionsMap.get(active.id);
+      // Generate a unique ID for the new section to allow multiple instances
       const newSectionData = { id: `${newSection.id}_${Date.now()}`, title: newSection.name };
       
-      const overIndex = over.id ? resumeData.sections.findIndex(s => s.id === over.id) : -1;
+      const overIndex = resumeData.sections.findIndex(s => s.id === over.id);
       
       setResumeData((prev) => {
         const newSections = [...prev.sections];
         if (overIndex !== -1) {
+          // If dropped on an existing section, insert after it
           newSections.splice(overIndex + 1, 0, newSectionData);
         } else {
+          // If dropped on the container itself or empty space, add to the end
           newSections.push(newSectionData);
         }
         return { ...prev, sections: newSections };
       });
-    } else {
+    } else if (resumeSectionsIds.includes(active.id)) {
+      // Reordering an existing item on the canvas
       const activeIndex = resumeData.sections.findIndex(s => s.id === active.id);
       const overIndex = resumeData.sections.findIndex(s => s.id === over.id);
   
@@ -289,7 +320,7 @@ export default function BuilderPage() {
    const exportAsPDF = () => {
     const resumeElement = document.getElementById('resume-preview');
     if (resumeElement) {
-      html2canvas(resumeElement, { scale: 2, backgroundColor: null }).then((canvas) => {
+      html2canvas(resumeElement, { scale: 2, backgroundColor: null, useCORS: true }).then((canvas) => {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -378,6 +409,9 @@ export default function BuilderPage() {
     '--resume-font-headline': styling.fontFamily,
     fontFamily: 'var(--resume-font-family)',
     backgroundColor: 'var(--resume-background)',
+    backgroundImage: styling.backgroundImage ? `url(${styling.backgroundImage})` : 'none',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
   };
 
   return (
@@ -435,19 +469,22 @@ export default function BuilderPage() {
                     </div>
                   <div>
                     <h3 className="mb-4 text-lg font-semibold">Fonts</h3>
-                    <div className="space-y-2">
-                      {fonts.map(font => (
-                        <Button
-                          key={font.name}
-                          variant={activeFont === font.family ? 'default' : 'outline'}
-                          className="w-full justify-start"
-                          onClick={() => handleFontChange(font.family)}
-                          style={{ fontFamily: font.family }}
-                        >
-                          {font.name}
-                        </Button>
-                      ))}
-                    </div>
+                    <Select onValueChange={handleFontChange} defaultValue={styling.fontFamily}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a font" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {fonts.map(font => (
+                                <SelectItem key={font.name} value={font.family} style={{ fontFamily: font.family }}>
+                                    {font.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                      <h3 className="mb-4 text-lg font-semibold">Background Image</h3>
+                      <Input id="bgImage" type="file" accept="image/*" onChange={handleBackgroundImageUpload} className="text-sm" />
                   </div>
                 </TabsContent>
               </ScrollArea>
@@ -504,7 +541,7 @@ export default function BuilderPage() {
               <div id="resume-canvas" className="w-full max-w-4xl mx-auto">
                 <Card className="w-full aspect-[8.5/11] shadow-lg transition-colors duration-300" id="resume-preview" style={resumeStyle}>
                   <CardContent className="p-8 text-foreground">
-                    <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                    <SortableContext id="resume-canvas-droppable" items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
                       <div className="space-y-4">
                         {resumeData.sections.map((section) => (
                            <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
@@ -519,7 +556,7 @@ export default function BuilderPage() {
             </ScrollArea>
           </main>
           <DragOverlay>
-            {activeId && allSectionsMap.get(activeId.split('_')[0]) ? (
+            {activeId && allSectionsMap.has(activeId.split('_')[0]) ? (
               <Card
                 className='flex items-center p-2 cursor-grabbing opacity-80'
               >

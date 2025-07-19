@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Space_Grotesk, Roboto, Lato, Montserrat } from 'next/font/google';
+import { Inter, Space_Grotesk, Roboto, Lato, Montserrat, Poppins, Open_Sans, Merriweather, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -34,6 +34,28 @@ const montserrat = Montserrat({
   variable: '--font-montserrat',
 });
 
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-poppins',
+});
+
+const openSans = Open_Sans({
+  subsets: ['latin'],
+  variable: '--font-open-sans',
+});
+
+const merriweather = Merriweather({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-merriweather',
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-playfair-display',
+});
+
 
 export const metadata: Metadata = {
   title: 'LAUNCHBOARD',
@@ -55,6 +77,10 @@ export default function RootLayout({
           roboto.variable,
           lato.variable,
           montserrat.variable,
+          poppins.variable,
+          openSans.variable,
+          merriweather.variable,
+          playfairDisplay.variable
         )}
       >
         <ThemeProvider

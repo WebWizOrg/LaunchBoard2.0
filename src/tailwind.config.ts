@@ -23,6 +23,10 @@ export default {
         roboto: ['var(--font-roboto)', 'sans-serif'],
         lato: ['var(--font-lato)', 'sans-serif'],
         montserrat: ['var(--font-montserrat)', 'sans-serif'],
+        poppins: ['var(--font-poppins)', 'sans-serif'],
+        'open-sans': ['var(--font-open-sans)', 'sans-serif'],
+        merriweather: ['var(--font-merriweather)', 'serif'],
+        'playfair-display': ['var(--font-playfair-display)', 'serif'],
       },
       colors: {
         border: 'hsl(var(--border))',
