@@ -30,33 +30,6 @@ import {
 } from '@/components/ui/carousel';
 
 export default function Home() {
-  const features = [
-    {
-      icon: <FileText className="h-8 w-8 text-primary" />,
-      title: 'Dynamic Resume Builder',
-      description:
-        'Craft the perfect resume with our intuitive drag-and-drop builder.',
-    },
-    {
-      icon: <Palette className="h-8 w-8 text-primary" />,
-      title: 'Customizable Templates',
-      description:
-        'Choose from a variety of sleek, modern templates to match your style.',
-    },
-    {
-      icon: <Share2 className="h-8 w-8 text-primary" />,
-      title: 'Share & Export',
-      description:
-        'Host your resume online with a custom URL or export it as a PDF.',
-    },
-    {
-      icon: <Bot className="h-8 w-8 text-primary" />,
-      title: 'AI-Powered Suggestions',
-      description:
-        'Get smart, AI-driven recommendations to make your resume stand out.',
-    },
-  ];
-
   const templates = [
     { name: 'Minimalist',
       image: 'https://placehold.co/400x566.png',
@@ -131,33 +104,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Features Section */}
-        <section id="features" className="py-16 md:py-24 bg-background">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="text-center">
-              <h2 className="text-3xl md:text-4xl font-bold font-headline">
-                Everything You Need to Succeed
-              </h2>
-              <p className="max-w-2xl mx-auto mt-4 text-lg text-muted-foreground">
-                Our powerful features are designed to make your professional journey seamless and successful.
-              </p>
-            </div>
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 mt-12">
-              {features.map((feature, index) => (
-                <Card key={index} className="bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 hover:bg-card/70 transition-all duration-300 transform hover:-translate-y-1">
-                  <CardHeader>
-                    {feature.icon}
-                    <CardTitle className="mt-4">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">{feature.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* AI Resume Demo Section */}
         <section id="ai-demo" className="py-16 md:py-24 bg-secondary/50">
           <div className="container mx-auto px-4 md:px-6">
@@ -175,12 +121,12 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Templates Section */}
-        <section id="templates" className="py-16 md:py-24 bg-background">
+        {/* Marketplace Section */}
+        <section id="marketplace" className="py-16 md:py-24 bg-background">
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center">
               <h2 className="text-3xl md:text-4xl font-bold font-headline">
-                Find Your Perfect Look
+                Find Your Perfect Look in our Marketplace
               </h2>
               <p className="max-w-2xl mx-auto mt-4 text-lg text-muted-foreground">
                 Browse our professionally designed templates.

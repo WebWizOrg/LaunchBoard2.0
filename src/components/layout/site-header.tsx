@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils"
 
 export function SiteHeader() {
   const navLinks = [
-    { name: "Features", href: "#features" },
-    { name: "Templates", href: "#templates" },
+    { name: "Builder", href: "/builder" },
+    { name: "Marketplace", href: "#marketplace" },
     { name: "Testimonials", href: "#testimonials" },
   ]
   // In a real app, you'd get this from a session provider
