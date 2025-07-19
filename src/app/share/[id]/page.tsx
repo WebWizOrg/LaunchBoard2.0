@@ -2,6 +2,7 @@
 import { ReadOnlyResume } from '@/components/read-only-resume';
 import { Rocket } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 // This is a Server Component, which can receive params directly.
 export default function SharePage({ params }: { params: { id: string } }) {
