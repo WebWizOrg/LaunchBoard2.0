@@ -16,6 +16,7 @@ import {
   Linkedin,
   Twitter,
   Facebook,
+  LayoutTemplate
 } from "lucide-react";
 import { collection, query, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, orderBy, getDoc, setDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -84,22 +85,22 @@ function AnalyticsCard({ title, value, icon: Icon }) {
     );
 }
 
-function SocialShareDialog({ resumeId, resumeName }) {
+function SocialShareDialog({ docId, docName, docType }) {
     const { toast } = useToast();
-    const shareUrl = `${window.location.origin}/share/${resumeId}`;
+    const shareUrl = `${window.location.origin}/${docType === 'resume' ? 'share' : 'portfolio/share'}/${docId}`;
     
     const socialLinks = {
-        linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(`Check out my resume: ${resumeName}`)}`,
-        twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`Check out my resume: ${resumeName}`)}`,
+        linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(`Check out my ${docType}: ${docName}`)}`,
+        twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`Check out my ${docType}: ${docName}`)}`,
         facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
     };
 
     return (
          <DialogContent>
             <DialogHeader>
-                <DialogTitle>Share "{resumeName}"</DialogTitle>
+                <DialogTitle>Share "{docName}"</DialogTitle>
                 <DialogDescription>
-                    Share your published resume with your network or copy the link.
+                    Share your published {docType} with your network or copy the link.
                 </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-4">
@@ -137,7 +138,7 @@ function SocialShareDialog({ resumeId, resumeName }) {
 export default function Dashboard() {
   const { user } = useAuth();
   const router = useRouter();
-  const [resumes, setResumes] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [analytics, setAnalytics] = useState({ totalViews: 0, uniqueVisitors: 0, totalShares: 0 });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -148,87 +149,118 @@ export default function Dashboard() {
       return;
     };
     
-    const q = query(collection(db, `users/${user.uid}/resumes`), orderBy('updatedAt', 'desc'));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const resumesData = [];
-      querySnapshot.forEach((doc) => {
-        resumesData.push({ id: doc.id, ...doc.data() });
-      });
-      setResumes(resumesData);
-      
-      // Calculate analytics based on published resumes
-      const publishedResumes = resumesData.filter(r => r.isPublished);
-      if (publishedResumes.length > 0) {
-          // In a real app, this would fetch from an analytics backend.
-          // For now, we'll simulate some data.
-          const totalViews = publishedResumes.reduce((acc, r) => acc + (r.views || 0), 0);
-          const uniqueVisitors = publishedResumes.reduce((acc, r) => acc + (r.uniqueVisitors || 0), 0);
-          const totalShares = publishedResumes.reduce((acc, r) => acc + (r.shares || 0), 0);
-          setAnalytics({ totalViews, uniqueVisitors, totalShares });
-      } else {
-          setAnalytics({ totalViews: 0, uniqueVisitors: 0, totalShares: 0 });
-      }
-      
-      setLoading(false);
+    const resumesQuery = query(collection(db, `users/${user.uid}/resumes`), orderBy('updatedAt', 'desc'));
+    const portfoliosQuery = query(collection(db, `users/${user.uid}/portfolios`), orderBy('updatedAt', 'desc'));
+
+    const unsubscribeResumes = onSnapshot(resumesQuery, (querySnapshot) => {
+        const resumesData = querySnapshot.docs.map(doc => ({ id: doc.id, type: 'resume', ...doc.data() }));
+        setDocuments(prev => {
+            const otherDocs = prev.filter(d => d.type !== 'resume');
+            const allDocs = [...resumesData, ...otherDocs].sort((a,b) => b.updatedAt.toMillis() - a.updatedAt.toMillis());
+            updateAnalytics(allDocs);
+            return allDocs;
+        });
+        setLoading(false);
+    });
+
+    const unsubscribePortfolios = onSnapshot(portfoliosQuery, (querySnapshot) => {
+        const portfoliosData = querySnapshot.docs.map(doc => ({ id: doc.id, type: 'portfolio', ...doc.data() }));
+        setDocuments(prev => {
+            const otherDocs = prev.filter(d => d.type !== 'portfolio');
+            const allDocs = [...portfoliosData, ...otherDocs].sort((a,b) => b.updatedAt.toMillis() - a.updatedAt.toMillis());
+            updateAnalytics(allDocs);
+            return allDocs;
+        });
+        setLoading(false);
     });
     
-    return () => unsubscribe();
+    const updateAnalytics = (docs) => {
+        const publishedDocs = docs.filter(r => r.isPublished);
+        if (publishedDocs.length > 0) {
+            const totalViews = publishedDocs.reduce((acc, r) => acc + (r.views || 0), 0);
+            const uniqueVisitors = publishedDocs.reduce((acc, r) => acc + (r.uniqueVisitors || 0), 0);
+            const totalShares = publishedDocs.reduce((acc, r) => acc + (r.shares || 0), 0);
+            setAnalytics({ totalViews, uniqueVisitors, totalShares });
+        } else {
+            setAnalytics({ totalViews: 0, uniqueVisitors: 0, totalShares: 0 });
+        }
+    }
+
+    return () => {
+      unsubscribeResumes();
+      unsubscribePortfolios();
+    };
   }, [user]);
 
-  const createNewResume = async () => {
+  const createNewDoc = async (type: 'resume' | 'portfolio') => {
     if (!user) return;
     try {
-      const newResumeRef = await addDoc(collection(db, `users/${user.uid}/resumes`), {
-        name: 'Untitled Resume',
+      const collectionName = type === 'resume' ? 'resumes' : 'portfolios';
+      const newDocRef = await addDoc(collection(db, `users/${user.uid}/${collectionName}`), {
+        name: `Untitled ${type.charAt(0).toUpperCase() + type.slice(1)}`,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         isPublished: false,
       });
-      router.push(`/builder?id=${newResumeRef.id}`);
+      const path = type === 'resume' ? '/builder' : '/portfolio/builder';
+      router.push(`${path}?id=${newDocRef.id}`);
     } catch (error) {
-      console.error("Error creating new resume: ", error);
-      toast({ title: 'Error creating resume', variant: 'destructive' });
+      console.error(`Error creating new ${type}: `, error);
+      toast({ title: `Error creating ${type}`, variant: 'destructive' });
     }
   };
   
-  const deleteResume = async (resumeId: string) => {
+  const deleteDoc = async (docId: string, type: 'resume' | 'portfolio') => {
     if (!user) return;
     try {
-      await deleteDoc(doc(db, `users/${user.uid}/resumes`, resumeId));
-      // also delete from published resumes
-      await deleteDoc(doc(db, 'publishedResumes', resumeId));
-      toast({ title: 'Resume deleted successfully' });
+      const collectionName = type === 'resume' ? 'resumes' : 'portfolios';
+      const publishedCollectionName = type === 'resume' ? 'publishedResumes' : 'publishedPortfolios';
+      await deleteDoc(doc(db, `users/${user.uid}/${collectionName}`, docId));
+      await deleteDoc(doc(db, publishedCollectionName, docId));
+      toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully` });
     } catch (error) {
-      console.error("Error deleting resume: ", error);
-       toast({ title: 'Error deleting resume', variant: 'destructive' });
+      console.error(`Error deleting ${type}: `, error);
+       toast({ title: `Error deleting ${type}`, variant: 'destructive' });
     }
   }
 
-  const duplicateResume = async (resumeId: string) => {
+  const duplicateDoc = async (docId: string, type: 'resume' | 'portfolio') => {
     if(!user) return;
     try {
-        const originalResumeRef = doc(db, `users/${user.uid}/resumes`, resumeId);
-        const originalResumeSnap = await getDoc(originalResumeRef);
+        const collectionName = type === 'resume' ? 'resumes' : 'portfolios';
+        const originalDocRef = doc(db, `users/${user.uid}/${collectionName}`, docId);
+        const originalDocSnap = await getDoc(originalDocRef);
 
-        if(originalResumeSnap.exists()) {
-            const originalData = originalResumeSnap.data();
-            const newResumeData = {
+        if(originalDocSnap.exists()) {
+            const originalData = originalDocSnap.data();
+            const newDocData = {
                 ...originalData,
                 name: `Copy of ${originalData.name}`,
-                isPublished: false, // Duplicates are not published by default
+                isPublished: false,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
-            const newResumeRef = await addDoc(collection(db, `users/${user.uid}/resumes`), newResumeData);
-            toast({ title: 'Resume duplicated!', description: `Created "${newResumeData.name}"` });
-            router.push(`/builder?id=${newResumeRef.id}`);
+            const newDocRef = await addDoc(collection(db, `users/${user.uid}/${collectionName}`), newDocData);
+            toast({ title: 'Document duplicated!', description: `Created "${newDocData.name}"` });
+            const path = type === 'resume' ? '/builder' : '/portfolio/builder';
+            router.push(`${path}?id=${newDocRef.id}`);
         }
     } catch (error) {
-        console.error("Error duplicating resume:", error);
-        toast({ title: 'Error duplicating resume', variant: 'destructive' });
+        console.error("Error duplicating document:", error);
+        toast({ title: 'Error duplicating document', variant: 'destructive' });
     }
   }
+  
+  const getEditPath = (doc) => {
+      const path = doc.type === 'resume' ? '/builder' : '/portfolio/builder';
+      return `${path}?id=${doc.id}`;
+  }
+
+  const getSharePath = (doc) => {
+      const path = doc.type === 'resume' ? '/share' : '/portfolio/share';
+      return `${path}/${doc.id}`;
+  }
+
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -248,12 +280,26 @@ export default function Dashboard() {
                 </CardDescription>
               </div>
               <div className="ml-auto flex items-center gap-2">
-                <Button size="sm" className="h-8 gap-1" onClick={createNewResume}>
-                  <PlusCircle className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Create New
-                  </span>
-                </Button>
+                 <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" className="h-8 gap-1">
+                      <PlusCircle className="h-3.5 w-3.5" />
+                      <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                        Create New
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => createNewDoc('resume')}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        New Resume
+                    </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => createNewDoc('portfolio')}>
+                        <LayoutTemplate className="mr-2 h-4 w-4" />
+                        New Portfolio
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </CardHeader>
             <CardContent>
@@ -261,6 +307,7 @@ export default function Dashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
+                    <TableHead className="hidden md:table-cell">Type</TableHead>
                      <TableHead className="hidden md:table-cell">
                       Status
                     </TableHead>
@@ -275,19 +322,20 @@ export default function Dashboard() {
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                      <TableCell colSpan={5} className="text-center">Loading...</TableCell>
                     </TableRow>
-                  ) : resumes.length > 0 ? (
-                    resumes.map(resume => (
-                      <TableRow key={resume.id}>
-                      <TableCell className="font-medium">{resume.name}</TableCell>
+                  ) : documents.length > 0 ? (
+                    documents.map(doc => (
+                      <TableRow key={doc.id}>
+                      <TableCell className="font-medium">{doc.name}</TableCell>
+                      <TableCell className="hidden md:table-cell capitalize">{doc.type}</TableCell>
                        <TableCell className="hidden md:table-cell">
-                        <Badge variant={resume.isPublished ? "default" : "secondary"}>
-                          {resume.isPublished ? 'Published' : 'Draft'}
+                        <Badge variant={doc.isPublished ? "default" : "secondary"}>
+                          {doc.isPublished ? 'Published' : 'Draft'}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {resume.updatedAt ? formatDistanceToNow(resume.updatedAt.toDate(), { addSuffix: true }) : 'N/A'}
+                        {doc.updatedAt ? formatDistanceToNow(doc.updatedAt.toDate(), { addSuffix: true }) : 'N/A'}
                       </TableCell>
                       <TableCell>
                          <Dialog>
@@ -304,20 +352,20 @@ export default function Dashboard() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => router.push(`/builder?id=${resume.id}`)}>
-                                    <FileText className="mr-2 h-4 w-4" />
+                                <DropdownMenuItem onClick={() => router.push(getEditPath(doc))}>
+                                    {doc.type === 'resume' ? <FileText className="mr-2 h-4 w-4" /> : <LayoutTemplate className="mr-2 h-4 w-4" />}
                                     Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push(`/share/${resume.id}`)} disabled={!resume.isPublished}>
+                                <DropdownMenuItem onClick={() => router.push(getSharePath(doc))} disabled={!doc.isPublished}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 Preview
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => duplicateResume(resume.id)}>
+                                <DropdownMenuItem onClick={() => duplicateDoc(doc.id, doc.type)}>
                                     <Copy className="mr-2 h-4 w-4" />
                                     Duplicate
                                 </DropdownMenuItem>
                                 <DialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={!resume.isPublished}>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={!doc.isPublished}>
                                         <Share2 className="mr-2 h-4 w-4" />
                                         Share
                                     </DropdownMenuItem>
@@ -336,12 +384,12 @@ export default function Dashboard() {
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
                                         This action cannot be undone. This will permanently delete your
-                                        resume and remove your data from our servers.
+                                        document and remove your data from our servers.
                                     </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => deleteResume(resume.id)} className="bg-destructive hover:bg-destructive/90">
+                                    <AlertDialogAction onClick={() => deleteDoc(doc.id, doc.type)} className="bg-destructive hover:bg-destructive/90">
                                         Continue
                                     </AlertDialogAction>
                                     </AlertDialogFooter>
@@ -349,14 +397,14 @@ export default function Dashboard() {
                                 </AlertDialog>
                             </DropdownMenuContent>
                             </DropdownMenu>
-                            <SocialShareDialog resumeId={resume.id} resumeName={resume.name} />
+                            <SocialShareDialog docId={doc.id} docName={doc.name} docType={doc.type} />
                         </Dialog>
                       </TableCell>
                     </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center">No resumes found. Create one to get started!</TableCell>
+                      <TableCell colSpan={5} className="text-center">No documents found. Create one to get started!</TableCell>
                     </TableRow>
                   )}
                 </TableBody>

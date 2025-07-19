@@ -1,10 +1,11 @@
+// src/components/layout/site-header.tsx
 "use client";
 
 import Link from "next/link"
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Rocket, LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
@@ -26,31 +27,44 @@ export function SiteHeader() {
   const router = useRouter();
   const { user, signOut, loading } = useAuth();
   const [lastResumeId, setLastResumeId] = useState<string | null>(null);
+  const [lastPortfolioId, setLastPortfolioId] = useState<string | null>(null);
   
   useEffect(() => {
     if (user && !loading) {
-      const getMostRecentResume = async () => {
-        const q = query(collection(db, `users/${user.uid}/resumes`), orderBy("updatedAt", "desc"), limit(1));
-        const querySnapshot = await getDocs(q);
-        if (!querySnapshot.empty) {
-          setLastResumeId(querySnapshot.docs[0].id);
+      const getMostRecentDocs = async () => {
+        // Fetch last resume
+        const resumeQuery = query(collection(db, `users/${user.uid}/resumes`), orderBy("updatedAt", "desc"), limit(1));
+        const resumeSnapshot = await getDocs(resumeQuery);
+        if (!resumeSnapshot.empty) {
+          setLastResumeId(resumeSnapshot.docs[0].id);
         } else {
           setLastResumeId(null);
         }
+        
+        // Fetch last portfolio
+        const portfolioQuery = query(collection(db, `users/${user.uid}/portfolios`), orderBy("updatedAt", "desc"), limit(1));
+        const portfolioSnapshot = await getDocs(portfolioQuery);
+        if (!portfolioSnapshot.empty) {
+          setLastPortfolioId(portfolioSnapshot.docs[0].id);
+        } else {
+            setLastPortfolioId(null);
+        }
       };
-      getMostRecentResume();
+      getMostRecentDocs();
     }
-  }, [user, loading, pathname]); // Re-check when path changes to update active resume
+  }, [user, loading, pathname]); // Re-check when path changes to update active doc
 
-  const builderHref = lastResumeId ? `/builder?id=${lastResumeId}` : '/dashboard';
+  const resumeBuilderHref = lastResumeId ? `/builder?id=${lastResumeId}` : '/dashboard';
+  const portfolioBuilderHref = lastPortfolioId ? `/portfolio/builder?id=${lastPortfolioId}` : '/dashboard';
 
   const navLinks = [
-    { name: "Builder", href: builderHref },
+    { name: "Resume Builder", href: resumeBuilderHref },
+    { name: "Portfolio Builder", href: portfolioBuilderHref },
     { name: "Marketplace", href: "/#marketplace" },
     { name: "Dashboard", href: "/dashboard" },
   ]
 
-  if (pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/share')) {
+  if (pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/share') || pathname.startsWith('/portfolio/share')) {
       return null;
   }
   
@@ -93,9 +107,9 @@ export function SiteHeader() {
                       </Button>
                   </SheetTrigger>
                   <SheetContent side="left">
-                      <SheetHeader className="sr-only">
-                        <SheetTitle>Mobile Navigation</SheetTitle>
-                        <SheetDescription>Main navigation links for the site.</SheetDescription>
+                      <SheetHeader>
+                        <SheetTitle className="sr-only">Mobile Navigation</SheetTitle>
+                        <SheetDescription className="sr-only">Main navigation links for the site.</SheetDescription>
                       </SheetHeader>
                       <Link href="/" className="flex items-center space-x-2 mb-6">
                         <Rocket className="h-6 w-6 text-primary" />
@@ -151,7 +165,7 @@ export function SiteHeader() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
-                  !pathname.startsWith('/builder') && (
+                  !(pathname.startsWith('/builder') || pathname.startsWith('/portfolio/builder')) && (
                     <>
                       <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }))}>
                         Log in
