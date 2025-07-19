@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { Menu, Rocket, LogOut } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
