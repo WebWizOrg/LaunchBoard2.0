@@ -41,6 +41,7 @@ import {
   Palette,
   PanelRightClose,
   PanelRightOpen,
+  Phone,
   Plus,
   Save,
   Share2,
@@ -85,6 +86,7 @@ import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 // Wrapper to prevent hydration errors with dnd-kit
 function ClientOnly({ children }: { children: React.ReactNode }) {
@@ -104,6 +106,7 @@ function ClientOnly({ children }: { children: React.ReactNode }) {
 const initialSections = [
     { id: 'header', icon: <User />, name: 'Header' },
     { id: 'summary', icon: <FileText />, name: 'Summary' },
+    { id: 'contact', icon: <Phone />, name: 'Contact' },
     { id: 'education', icon: <GraduationCap />, name: 'Education' },
     { id: 'experience', icon: <Briefcase />, name: 'Experience' },
     { id: 'skills', icon: <Sparkles />, name: 'Skills' },
@@ -143,6 +146,18 @@ const fonts = [
   { name: 'Open Sans', family: 'var(--font-open-sans)' },
   { name: 'Merriweather', family: 'var(--font-merriweather)' },
   { name: 'Playfair Display', family: 'var(--font-playfair-display)' },
+];
+
+const lightBgColors = [
+    { name: 'White', value: '#ffffff' },
+    { name: 'Cream', value: '#fdf8f0' },
+    { name: 'Off-White', value: '#f8f8f8' },
+];
+
+const darkBgColors = [
+    { name: 'Ash', value: '#2d3748' },
+    { name: 'Dark Blue', value: '#1a202c' },
+    { name: 'Black', value: '#111111' },
 ];
 
 function DraggableSection({ id, name, icon }) {
@@ -249,12 +264,12 @@ export default function BuilderPage() {
 
   const [styling, setStyling] = useState({
       template: 'minimalist',
-      primaryColor: '#1d4ed8',
-      accentColor: '#f59e0b',
+      accentColor: '#FFB700',
       backgroundColorLight: '#ffffff',
-      backgroundColorDark: '#111827',
+      backgroundColorDark: '#1a202c',
       fontFamily: 'var(--font-inter)',
       backgroundImage: '',
+      accentPattern: '',
       backgroundBlur: 0,
       backgroundBrightness: 100,
   });
@@ -350,6 +365,17 @@ export default function BuilderPage() {
       reader.readAsDataURL(file);
     }
   };
+  
+    const handleAccentPatternUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handleStyleChange('accentPattern', reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
@@ -390,6 +416,8 @@ export default function BuilderPage() {
           defaultContent.items = [];
       } else if (newSectionType === 'header') {
           defaultContent = { name: 'Your Name', tagline: 'Your Role', avatar: '', showAvatar: true, links: [] };
+      } else if (newSectionType === 'contact') {
+          defaultContent = { title: 'Contact', phone: '', email: '', address: '' };
       } else {
         defaultContent.text = '';
       }
@@ -475,7 +503,17 @@ export default function BuilderPage() {
   
     const renderSectionComponent = (section) => {
         const content = resumeData.content[section.id] || {};
-      
+        const isHorizontalSplit = styling.template === 'horizontal-split';
+
+        const TitleInput = ({value, onChange, style}) => (
+             <Input 
+                value={value} 
+                onChange={onChange} 
+                className="text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent inline-block w-auto mb-2" 
+                style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', ...style }}
+             />
+        );
+
         switch (section.type) {
             case 'header':
               return (
@@ -488,7 +526,8 @@ export default function BuilderPage() {
                                 width={128}
                                 height={128}
                                 data-ai-hint="placeholder"
-                                className="rounded-full object-cover w-32 h-32 border-2 border-primary/50"
+                                className="rounded-full object-cover w-32 h-32 border-2"
+                                style={{borderColor: 'var(--resume-accent-color)'}}
                             />
                             <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                                 <ImageIcon className="h-8 w-8" />
@@ -517,11 +556,22 @@ export default function BuilderPage() {
                    </div>
                 </div>
               );
+            case 'contact':
+              return (
+                <div className="mt-6">
+                  <TitleInput value={content.title} onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} />
+                  <div className="space-y-1">
+                      <Input placeholder="Phone Number" value={content.phone} onChange={(e) => handleContentChange(section.id, 'phone', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                      <Input placeholder="Email Address" value={content.email} onChange={(e) => handleContentChange(section.id, 'email', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                      <Input placeholder="Your Address" value={content.address} onChange={(e) => handleContentChange(section.id, 'address', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                  </div>
+                </div>
+              );
           case 'summary':
           case 'cover_letter':
               return (
                   <div className="mt-6">
-                      <Input value={content.title} onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} className="text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent inline-block w-auto mb-2" style={{ borderBottom: '2px solid var(--resume-primary)', fontFamily: 'var(--resume-font-headline, var(--font-headline))' }} />
+                      <TitleInput value={content.title} onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} style={{color: isHorizontalSplit ? 'var(--resume-accent-color)' : 'inherit'}} />
                       <Textarea value={content.text} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
                   </div>
               );
@@ -533,7 +583,7 @@ export default function BuilderPage() {
             const itemType = section.type === 'links' ? 'links' : section.type.slice(0, -1);
             return (
                 <div className="mt-6">
-                     <Input value={content.title} onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} className="text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent inline-block w-auto mb-2" style={{ borderBottom: '2px solid var(--resume-primary)', fontFamily: 'var(--resume-font-headline, var(--font-headline))' }} />
+                     <TitleInput value={content.title} onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} style={{color: isHorizontalSplit ? 'var(--resume-accent-color)' : 'inherit'}}/>
                      <div className="space-y-4">
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
@@ -584,11 +634,10 @@ export default function BuilderPage() {
            case 'publications':
             return (
               <div className="mt-6">
-                 <Input
-                    value={content.title}
-                    onChange={(e) => handleContentChange(section.id, 'title', e.target.value)}
-                    className="text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent inline-block w-auto mb-2"
-                    style={{ borderBottom: '2px solid var(--resume-primary)', fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}
+                 <TitleInput 
+                    value={content.title} 
+                    onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} 
+                    style={{color: isHorizontalSplit ? 'var(--resume-accent-color)' : 'inherit'}}
                 />
                 <Textarea value={content.text} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`e.g., Python, JavaScript, Public Speaking...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
               </div>
@@ -620,24 +669,29 @@ export default function BuilderPage() {
 
     const renderTemplate = () => {
         if (styling.template === 'horizontal-split') {
-            const leftSections = ['header', 'summary', 'links', 'publications', 'certifications', 'achievements'];
+            const leftSections = ['header', 'summary', 'contact', 'links', 'publications', 'certifications', 'achievements'];
             const rightSections = ['experience', 'education', 'projects', 'skills', 'languages'];
 
             const leftContent = resumeData.sections.filter(s => leftSections.includes(s.type));
-            const rightContent = resumeData.sections.filter(s => rightSections.includes(s.type));
+            const rightContent = resumeData.sections.filter(s => ![...leftSections, 'line_break', 'subtitle', 'cover_letter'].includes(s.type));
             
             return (
                 <div className="flex h-full">
-                    <div className="w-[30%] p-6" style={{ backgroundColor: 'var(--resume-accent-bg)' }}>
-                       <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
-                          {leftContent.map((section) => (
-                             <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
-                              {renderSectionComponent(section)}
-                            </SortableResumeSection>
-                          ))}
-                        </SortableContext>
+                    <div className="w-[30%] p-6 relative" style={{'--resume-accent-bg-text-color': 'var(--resume-background)', backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-background)'}}>
+                        {styling.accentPattern && (
+                             <div className="absolute inset-0 bg-repeat bg-center opacity-10" style={{backgroundImage: `url(${styling.accentPattern})`}}></div>
+                        )}
+                       <div className="relative">
+                           <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                              {leftContent.map((section) => (
+                                 <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
+                                  {renderSectionComponent(section)}
+                                </SortableResumeSection>
+                              ))}
+                            </SortableContext>
+                        </div>
                     </div>
-                    <div className="w-[70%] p-6">
+                    <div className="w-[70%] p-6" style={{'--resume-right-text-color': 'var(--resume-foreground)', color: 'var(--resume-foreground)'}}>
                         <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
                           {rightContent.map((section) => (
                              <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
@@ -665,14 +719,14 @@ export default function BuilderPage() {
     };
 
   const resumeStyle = {
-    '--resume-primary': styling.primaryColor,
-    '--resume-accent': styling.accentColor,
-    '--resume-accent-bg': `${styling.accentColor}20`, // accent with 20% opacity
+    '--resume-accent-color': styling.accentColor,
     '--resume-background': theme === 'dark' ? styling.backgroundColorDark : styling.backgroundColorLight,
+    '--resume-foreground': theme === 'dark' ? '#f8f8f8' : '#111111',
     '--resume-font-family': styling.fontFamily,
     '--resume-font-headline': styling.fontFamily,
     fontFamily: 'var(--resume-font-family)',
     backgroundColor: 'var(--resume-background)',
+    color: 'var(--resume-foreground)'
   };
 
   const resumeBgStyle = {
@@ -724,23 +778,42 @@ export default function BuilderPage() {
                         <h3 className="mb-4 text-lg font-semibold">Colors</h3>
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="primaryColor">Primary</Label>
-                                <Input id="primaryColor" type="color" value={styling.primaryColor} onChange={(e) => handleStyleChange('primaryColor', e.target.value)} className="w-24 p-1 h-8" />
-                            </div>
-                            <div className="flex items-center justify-between">
                                 <Label htmlFor="accentColor">Accent</Label>
                                 <Input id="accentColor" type="color" value={styling.accentColor} onChange={(e) => handleStyleChange('accentColor', e.target.value)} className="w-24 p-1 h-8" />
                             </div>
-                             <div className="flex items-center justify-between">
-                                <Label htmlFor="bgColorLight">Bg (Light)</Label>
-                                <Input id="bgColorLight" type="color" value={styling.backgroundColorLight} onChange={(e) => handleStyleChange('backgroundColorLight', e.target.value)} className="w-24 p-1 h-8" />
-                            </div>
-                             <div className="flex items-center justify-between">
-                                <Label htmlFor="bgColorDark">Bg (Dark)</Label>
-                                <Input id="bgColorDark" type="color" value={styling.backgroundColorDark} onChange={(e) => handleStyleChange('backgroundColorDark', e.target.value)} className="w-24 p-1 h-8" />
-                            </div>
                         </div>
                     </div>
+
+                    <div>
+                      <h3 className="mb-4 text-lg font-semibold">Background (Light Mode)</h3>
+                       <RadioGroup value={styling.backgroundColorLight} onValueChange={(val) => handleStyleChange('backgroundColorLight', val)} className="space-y-2">
+                          {lightBgColors.map(color => (
+                            <div key={color.value} className="flex items-center space-x-2">
+                                <RadioGroupItem value={color.value} id={`light-${color.name}`} />
+                                <Label htmlFor={`light-${color.name}`} className="flex items-center gap-2">
+                                    <div className="h-4 w-4 rounded-full border" style={{backgroundColor: color.value}}></div>
+                                    {color.name}
+                                </Label>
+                            </div>
+                          ))}
+                       </RadioGroup>
+                    </div>
+
+                     <div>
+                      <h3 className="mb-4 text-lg font-semibold">Background (Dark Mode)</h3>
+                       <RadioGroup value={styling.backgroundColorDark} onValueChange={(val) => handleStyleChange('backgroundColorDark', val)} className="space-y-2">
+                          {darkBgColors.map(color => (
+                            <div key={color.value} className="flex items-center space-x-2">
+                                <RadioGroupItem value={color.value} id={`dark-${color.name}`} />
+                                <Label htmlFor={`dark-${color.name}`} className="flex items-center gap-2">
+                                    <div className="h-4 w-4 rounded-full border" style={{backgroundColor: color.value}}></div>
+                                    {color.name}
+                                </Label>
+                            </div>
+                          ))}
+                       </RadioGroup>
+                    </div>
+
                   <div>
                     <h3 className="mb-4 text-lg font-semibold">Fonts</h3>
                     <Select onValueChange={handleFontChange} defaultValue={styling.fontFamily}>
@@ -771,6 +844,10 @@ export default function BuilderPage() {
                               </div>
                           </div>
                       )}
+                  </div>
+                  <div>
+                        <h3 className="mb-4 text-lg font-semibold">Accent Pattern</h3>
+                        <Input id="accentPattern" type="file" accept="image/*" onChange={handleAccentPatternUpload} className="text-sm" />
                   </div>
                 </TabsContent>
               </ScrollArea>
