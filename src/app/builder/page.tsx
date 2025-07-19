@@ -546,7 +546,7 @@ export default function BuilderPage() {
             <div className="flex items-center gap-3 mb-2">
                 {Icon && <Icon className="h-6 w-6" style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }} />}
                  <Input 
-                    value={value} 
+                    value={value || ''} 
                     onChange={(e) => onChange(e.target.value)} 
                     className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", titleClass)} 
                     style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)', ...props.style }}
@@ -576,13 +576,13 @@ export default function BuilderPage() {
                         </div>
                     )}
                   <Input
-                    value={content.name}
+                    value={content.name || ''}
                     onChange={(e) => handleContentChange(section.id, 'name', e.target.value)}
                     className="text-4xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent"
                     style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}
                   />
                   <Input
-                    value={content.tagline}
+                    value={content.tagline || ''}
                     onChange={(e) => handleContentChange(section.id, 'tagline', e.target.value)}
                     className="text-muted-foreground p-0 border-0 h-auto text-center focus-visible:ring-0 bg-transparent"
                   />
@@ -599,19 +599,19 @@ export default function BuilderPage() {
             case 'contact':
               return (
                 <div className="mt-6">
-                  <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={Phone} />
+                  <TitleInput value={content.title || ''} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={Phone} />
                   <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
-                        <Input placeholder="Email Address" value={content.email} onChange={(e) => handleContentChange(section.id, 'email', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                        <Input placeholder="Email Address" value={content.email || ''} onChange={(e) => handleContentChange(section.id, 'email', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                       </div>
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
-                        <Input placeholder="Phone Number" value={content.phone} onChange={(e) => handleContentChange(section.id, 'phone', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                        <Input placeholder="Phone Number" value={content.phone || ''} onChange={(e) => handleContentChange(section.id, 'phone', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
-                        <Input placeholder="Your Address" value={content.address} onChange={(e) => handleContentChange(section.id, 'address', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                        <Input placeholder="Your Address" value={content.address || ''} onChange={(e) => handleContentChange(section.id, 'address', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                       </div>
                   </div>
                 </div>
@@ -619,7 +619,7 @@ export default function BuilderPage() {
             case 'socials':
                 return (
                     <div className="mt-6">
-                        <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={Share} />
+                        <TitleInput value={content.title || ''} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={Share} />
                         <div className="space-y-2">
                             {(content.items || []).map((item, index) => (
                                 <div key={item.id} className="relative group/item flex items-center gap-2">
@@ -634,7 +634,7 @@ export default function BuilderPage() {
                                             <SelectItem value="twitter">Twitter</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <Input placeholder="Username or Profile URL" value={item.username} onChange={(e) => handleListItemChange(section.id, index, 'username', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                    <Input placeholder="Username or Profile URL" value={item.username || ''} onChange={(e) => handleListItemChange(section.id, index, 'username', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                 </div>
                             ))}
                             <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, 'socials')}>
@@ -647,20 +647,20 @@ export default function BuilderPage() {
           case 'cover_letter':
               return (
                   <div className="mt-6">
-                      <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={section.type === 'summary' ? FileText : Bot} />
-                      <Textarea value={content.text} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
+                      <TitleInput value={content.title || ''} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={section.type === 'summary' ? FileText : Bot} />
+                      <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
                   </div>
               );
           case 'recommendations':
             return (
                 <div className="mt-6">
-                     <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={Quote}/>
+                     <TitleInput value={content.title || ''} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={Quote}/>
                      <div className="space-y-4">
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
                                  <button onClick={() => removeListItem(section.id, index)} className="absolute top-0 -right-2 h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>
-                                 <Textarea placeholder="Recommendation text..." value={item.text} onChange={(e) => handleListItemChange(section.id, index, 'text', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0 italic" />
-                                 <Input placeholder="Author Name, Title @ Company" value={item.author} onChange={(e) => handleListItemChange(section.id, index, 'author', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-right font-semibold" />
+                                 <Textarea placeholder="Recommendation text..." value={item.text || ''} onChange={(e) => handleListItemChange(section.id, index, 'text', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0 italic" />
+                                 <Input placeholder="Author Name, Title @ Company" value={item.author || ''} onChange={(e) => handleListItemChange(section.id, index, 'author', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-right font-semibold" />
                              </div>
                          ))}
                          <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, 'recommendations')}>
@@ -684,43 +684,43 @@ export default function BuilderPage() {
             const itemConfig = itemTypeMap[section.type];
             return (
                 <div className="mt-6">
-                     <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={itemConfig.icon} titleClass={titleClass}/>
+                     <TitleInput value={content.title || ''} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={itemConfig.icon} titleClass={titleClass}/>
                      <div className="space-y-4">
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
                                  <button onClick={() => removeListItem(section.id, index)} className="absolute top-0 -right-2 h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>
                                  {section.type === 'education' && (
                                      <>
-                                         <Input placeholder="Institution Name" value={item.institution} onChange={(e) => handleListItemChange(section.id, index, 'institution', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                                         <Input placeholder="Degree or Field of Study" value={item.degree} onChange={(e) => handleListItemChange(section.id, index, 'degree', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                         <Input placeholder="Institution Name" value={item.institution || ''} onChange={(e) => handleListItemChange(section.id, index, 'institution', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                         <Input placeholder="Degree or Field of Study" value={item.degree || ''} onChange={(e) => handleListItemChange(section.id, index, 'degree', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                      </>
                                  )}
                                  {section.type === 'experience' && (
                                      <>
-                                         <Input placeholder="Company Name" value={item.company} onChange={(e) => handleListItemChange(section.id, index, 'company', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                                         <Input placeholder="Your Role" value={item.role} onChange={(e) => handleListItemChange(section.id, index, 'role', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                         <Input placeholder="Company Name" value={item.company || ''} onChange={(e) => handleListItemChange(section.id, index, 'company', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                         <Input placeholder="Your Role" value={item.role || ''} onChange={(e) => handleListItemChange(section.id, index, 'role', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                      </>
                                  )}
                                  {section.type === 'projects' && (
                                       <>
-                                         <Input placeholder="Project Name" value={item.name} onChange={(e) => handleListItemChange(section.id, index, 'name', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                                         <Input placeholder="Tech Stack" value={item.tech} onChange={(e) => handleListItemChange(section.id, index, 'tech', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-sm text-muted-foreground" />
+                                         <Input placeholder="Project Name" value={item.name || ''} onChange={(e) => handleListItemChange(section.id, index, 'name', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                         <Input placeholder="Tech Stack" value={item.tech || ''} onChange={(e) => handleListItemChange(section.id, index, 'tech', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-sm text-muted-foreground" />
                                      </>
                                  )}
                                   {section.type === 'certifications' && (
                                      <>
-                                         <Input placeholder="Certification Name" value={item.name} onChange={(e) => handleListItemChange(section.id, index, 'name', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                                         <Input placeholder="Issuing Organization" value={item.issuer} onChange={(e) => handleListItemChange(section.id, index, 'issuer', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                         <Input placeholder="Certification Name" value={item.name || ''} onChange={(e) => handleListItemChange(section.id, index, 'name', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                         <Input placeholder="Issuing Organization" value={item.issuer || ''} onChange={(e) => handleListItemChange(section.id, index, 'issuer', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                      </>
                                  )}
                                  {section.type === 'links' && (
                                      <div className="flex items-center gap-2">
-                                        <Input placeholder="Link Text" value={item.text} onChange={(e) => handleListItemChange(section.id, index, 'text', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                                        <Input placeholder="URL" value={item.url} onChange={(e) => handleListItemChange(section.id, index, 'url', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                        <Input placeholder="Link Text" value={item.text || ''} onChange={(e) => handleListItemChange(section.id, index, 'text', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                        <Input placeholder="URL" value={item.url || ''} onChange={(e) => handleListItemChange(section.id, index, 'url', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                      </div>
                                  )}
-                                 <Input placeholder="Dates (e.g., 2020 - 2024)" value={item.dates} onChange={(e) => handleListItemChange(section.id, index, 'dates', e.target.value)} className="text-sm text-muted-foreground border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                                 {['experience', 'projects', 'education'].includes(section.type) && <Textarea placeholder="Description or key achievements..." value={item.description} onChange={(e) => handleListItemChange(section.id, index, 'description', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0" />}
+                                 <Input placeholder="Dates (e.g., 2020 - 2024)" value={item.dates || ''} onChange={(e) => handleListItemChange(section.id, index, 'dates', e.target.value)} className="text-sm text-muted-foreground border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                 {['experience', 'projects', 'education'].includes(section.type) && <Textarea placeholder="Description or key achievements..." value={item.description || ''} onChange={(e) => handleListItemChange(section.id, index, 'description', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0" />}
                              </div>
                          ))}
                          <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, itemConfig.type)}>
@@ -733,7 +733,7 @@ export default function BuilderPage() {
             return (
               <div className="mt-6">
                  <TitleInput 
-                    value={content.title} 
+                    value={content.title || ''} 
                     onChange={(val) => handleContentChange(section.id, 'title', val)}
                     icon={Sparkles}
                     titleClass={titleClass}
@@ -742,7 +742,7 @@ export default function BuilderPage() {
                      <div className="space-y-4">
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item flex items-center gap-4">
-                                <Input value={item.skill} onChange={(e) => handleListItemChange(section.id, index, 'skill', e.target.value)} className="w-1/3 border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                <Input value={item.skill || ''} onChange={(e) => handleListItemChange(section.id, index, 'skill', e.target.value)} className="w-1/3 border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                 <Slider value={[item.level]} onValueChange={(val) => handleListItemChange(section.id, index, 'level', val[0])} className="flex-1" />
                                 <button onClick={() => removeListItem(section.id, index)} className="h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>
                              </div>
@@ -752,7 +752,7 @@ export default function BuilderPage() {
                          </Button>
                      </div>
                  ) : (
-                    <Textarea value={content.text} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`e.g., Python, JavaScript, Public Speaking...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
+                    <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`e.g., Python, JavaScript, Public Speaking...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
                  )}
               </div>
             );
@@ -767,18 +767,18 @@ export default function BuilderPage() {
             return (
               <div className="mt-6">
                  <TitleInput 
-                    value={content.title} 
+                    value={content.title || ''} 
                     onChange={(val) => handleContentChange(section.id, 'title', val)}
                     icon={textIconMap[section.type]}
                     titleClass={titleClass}
                 />
-                <Textarea value={content.text} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
+                <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
               </div>
             );
             case 'image':
               return (
                   <div className="mt-6">
-                      <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={ImageIcon} />
+                      <TitleInput value={content.title || ''} onChange={(val) => handleContentChange(section.id, 'title', val)} icon={ImageIcon} />
                       <div className="relative group w-full" style={{ width: `${content.width}%`}}>
                           <Image
                               src={content.src || 'https://placehold.co/600x400.png'}
@@ -803,7 +803,7 @@ export default function BuilderPage() {
                 return (
                     <div className="mt-4">
                         <Input 
-                            value={content.text}
+                            value={content.text || ''}
                             onChange={(e) => handleContentChange(section.id, 'text', e.target.value)}
                             placeholder="Subtitle"
                             className="text-lg font-semibold p-0 border-0 h-auto focus-visible:ring-0 bg-transparent"
@@ -831,13 +831,15 @@ export default function BuilderPage() {
           const headerContent = headerSection ? resumeData.content[headerSection.id] : {};
           const contactSection = resumeData.sections.find(s => s.type === 'contact');
           const contactContent = contactSection ? resumeData.content[contactSection.id] : {};
+          const socialsSection = resumeData.sections.find(s => s.type === 'socials');
+          const socialsContent = socialsSection ? resumeData.content[socialsSection.id] : {};
 
           return (
             <div className="p-10 space-y-6">
               {/* Header */}
               <header className="text-center space-y-2">
                 <Input
-                  value={headerContent.name}
+                  value={headerContent.name || ''}
                   onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)}
                   className="text-4xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent"
                   style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: 'var(--resume-accent-color)' }}
@@ -845,19 +847,19 @@ export default function BuilderPage() {
                 <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Mail className="h-4 w-4"/>
-                    <Input placeholder="Email Address" value={contactContent.email} onChange={(e) => handleContentChange(contactSection.id, 'email', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                    <Input placeholder="Email Address" value={contactContent.email || ''} onChange={(e) => handleContentChange(contactSection.id, 'email', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                   </div>
                   <div className="flex items-center gap-1">
                     <Phone className="h-4 w-4"/>
-                    <Input placeholder="Phone Number" value={contactContent.phone} onChange={(e) => handleContentChange(contactSection.id, 'phone', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                    <Input placeholder="Phone Number" value={contactContent.phone || ''} onChange={(e) => handleContentChange(contactSection.id, 'phone', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                   </div>
                    <div className="flex items-center gap-1">
                     <Github className="h-4 w-4"/>
-                    <Input placeholder="github.com/your-profile" value={contactContent.github} onChange={(e) => handleContentChange(contactSection.id, 'github', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                    <Input placeholder="github.com/your-profile" value={(socialsContent?.items || []).find(i => i.platform === 'github')?.username || ''} onChange={(e) => handleListItemChange(socialsSection.id, (socialsContent?.items || []).findIndex(i => i.platform === 'github'), 'username', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                   </div>
                    <div className="flex items-center gap-1">
                     <Linkedin className="h-4 w-4"/>
-                    <Input placeholder="linkedin.com/in/your-profile" value={contactContent.linkedin} onChange={(e) => handleContentChange(contactSection.id, 'linkedin', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                    <Input placeholder="linkedin.com/in/your-profile" value={(socialsContent?.items || []).find(i => i.platform === 'linkedin')?.username || ''} onChange={(e) => handleListItemChange(socialsSection.id, (socialsContent?.items || []).findIndex(i => i.platform === 'linkedin'), 'username', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                   </div>
                 </div>
               </header>
@@ -865,7 +867,7 @@ export default function BuilderPage() {
               <Separator className="bg-border/30" />
 
               <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
-                  {resumeData.sections.filter(s => s.type !== 'header' && s.type !== 'contact').map((section) => (
+                  {resumeData.sections.filter(s => s.type !== 'header' && s.type !== 'contact' && s.type !== 'socials').map((section) => (
                      <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
                       {renderSectionComponent(section)}
                     </SortableResumeSection>
@@ -888,13 +890,13 @@ export default function BuilderPage() {
                 <div className='p-8'>
                     <header className="text-center mb-6">
                         <Input
-                            value={headerContent.name}
+                            value={headerContent.name || ''}
                             onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)}
                             className="text-3xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent"
                             style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}
                         />
                         <Input
-                            value={headerContent.tagline}
+                            value={headerContent.tagline || ''}
                             onChange={(e) => handleContentChange(headerSection.id, 'tagline', e.target.value)}
                             className="text-center p-0 border-0 h-auto focus-visible:ring-0 bg-transparent text-muted-foreground"
                         />
@@ -943,8 +945,8 @@ export default function BuilderPage() {
                             </div>
                         )}
                         <div>
-                             <Input value={headerContent.name} onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)} className="text-5xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent" style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}/>
-                             <Input value={headerContent.tagline} onChange={(e) => handleContentChange(headerSection.id, 'tagline', e.target.value)} className="text-2xl p-0 border-0 h-auto focus-visible:ring-0 bg-transparent text-muted-foreground" />
+                             <Input value={headerContent.name || ''} onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)} className="text-5xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent" style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}/>
+                             <Input value={headerContent.tagline || ''} onChange={(e) => handleContentChange(headerSection.id, 'tagline', e.target.value)} className="text-2xl p-0 border-0 h-auto focus-visible:ring-0 bg-transparent text-muted-foreground" />
                         </div>
                     </header>
                     <div className="flex gap-8">
@@ -976,19 +978,21 @@ export default function BuilderPage() {
              const headerContent = headerSection ? resumeData.content[headerSection.id] : {};
              const contactSection = resumeData.sections.find(s => s.type === 'contact');
              const contactContent = contactSection ? resumeData.content[contactSection.id] : {};
+             const socialsSection = resumeData.sections.find(s => s.type === 'socials');
+             const socialsContent = socialsSection ? resumeData.content[socialsSection.id] : {};
 
              return (
                  <div className="p-10 space-y-4">
                      <header className="text-center space-y-1">
-                         <Input value={headerContent.name} onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)} className="text-4xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent" style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }} />
+                         <Input value={headerContent.name || ''} onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)} className="text-4xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent" style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }} />
                          <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-                             <Input placeholder="Email" value={contactContent.email} onChange={(e) => handleContentChange(contactSection.id, 'email', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-center" />
-                             <Input placeholder="Phone" value={contactContent.phone} onChange={(e) => handleContentChange(contactSection.id, 'phone', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-center" />
-                             <Input placeholder="LinkedIn" value={contactContent.linkedin} onChange={(e) => handleContentChange(contactSection.id, 'linkedin', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-center" />
+                             <Input placeholder="Email" value={contactContent.email || ''} onChange={(e) => handleContentChange(contactSection.id, 'email', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-center" />
+                             <Input placeholder="Phone" value={contactContent.phone || ''} onChange={(e) => handleContentChange(contactSection.id, 'phone', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-center" />
+                             <Input placeholder="LinkedIn" value={(socialsContent?.items || []).find(i => i.platform === 'linkedin')?.username || ''} onChange={(e) => handleListItemChange(socialsSection.id, (socialsContent?.items || []).findIndex(i => i.platform === 'linkedin'), 'username', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-center" />
                          </div>
                      </header>
                      <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
-                         {resumeData.sections.filter(s => !['header', 'contact'].includes(s.type)).map((section) => (
+                         {resumeData.sections.filter(s => !['header', 'contact', 'socials'].includes(s.type)).map((section) => (
                              <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
                                  {renderSectionComponent(section, { titleClass: 'text-blue-700' })}
                              </SortableResumeSection>
@@ -1012,8 +1016,8 @@ export default function BuilderPage() {
                         {headerSection && 
                             <div className="mb-6 text-center">
                                 {headerContent.showAvatar && <Image src={headerContent.avatar || 'https://placehold.co/128x128.png'} alt="Avatar" width={128} height={128} data-ai-hint="placeholder" className="rounded-full object-cover w-32 h-32 mx-auto mb-4 border-2 border-primary" />}
-                                <Input value={headerContent.name} onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)} className="text-2xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent" />
-                                <Input value={headerContent.tagline} onChange={(e) => handleContentChange(headerSection.id, 'tagline', e.target.value)} className="text-center p-0 border-0 h-auto focus-visible:ring-0 bg-transparent text-muted-foreground" />
+                                <Input value={headerContent.name || ''} onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)} className="text-2xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent" />
+                                <Input value={headerContent.tagline || ''} onChange={(e) => handleContentChange(headerSection.id, 'tagline', e.target.value)} className="text-center p-0 border-0 h-auto focus-visible:ring-0 bg-transparent text-muted-foreground" />
                             </div>
                         }
                         <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
@@ -1084,13 +1088,13 @@ export default function BuilderPage() {
                         )}
                         <div className="flex-grow flex flex-col justify-center">
                              <Input
-                                value={headerContent.name}
+                                value={headerContent.name || ''}
                                 onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)}
                                 className="text-5xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent text-left"
                                 style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: 'var(--resume-accent-text-color)' }}
                             />
                             <Input
-                                value={headerContent.tagline}
+                                value={headerContent.tagline || ''}
                                 onChange={(e) => handleContentChange(headerSection.id, 'tagline', e.target.value)}
                                 className="text-2xl p-0 border-0 h-auto focus-visible:ring-0 bg-transparent opacity-80 text-left mt-2"
                                 style={{color: 'var(--resume-accent-text-color)'}}
@@ -1268,8 +1272,6 @@ export default function BuilderPage() {
     '--resume-accent-text-color': styling.accentTextColor,
     '--resume-background': theme === 'dark' ? styling.backgroundColorDark : styling.backgroundColorLight,
     '--resume-foreground': theme === 'dark' ? '#f8f8f8' : '#111111',
-    '--resume-font-family': styling.fontFamily,
-    '--resume-font-headline': styling.fontFamily,
     fontFamily: 'var(--resume-font-family)',
     backgroundColor: 'var(--resume-background)',
     color: 'var(--resume-foreground)'
