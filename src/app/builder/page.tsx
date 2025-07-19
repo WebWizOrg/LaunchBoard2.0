@@ -1,3 +1,4 @@
+
 // src/app/builder/page.tsx
 'use client';
 
@@ -560,16 +561,16 @@ export default function BuilderPage() {
             if (section.type === 'projects' && (!content.items || content.items.length === 0)) return null;
         }
 
-        const TitleComponent = ({value, icon: Icon, className, ...props}) => (
+        const TitleComponent = ({value, icon: Icon, className, titleClass: localTitleClass, ...props}) => (
             <div className="flex items-center gap-3 mb-2">
                 {Icon && <Icon className="h-6 w-6" style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }} />}
                 {isPreviewing ? (
-                    <div className={cn("text-xl font-bold w-full", titleClass, className)} {...props}>{value}</div>
+                    <div className={cn("text-xl font-bold w-full", localTitleClass, className)} {...props}>{value}</div>
                 ) : (
                     <Input 
                         value={value || ''} 
                         onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} 
-                        className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", titleClass, className)} 
+                        className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", localTitleClass, className)} 
                         style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)', ...props.style }}
                     />
                 )}
@@ -636,7 +637,7 @@ export default function BuilderPage() {
             case 'contact':
               return (
                 <div className="mt-6">
-                  <TitleComponent value={content.title || ''} icon={Phone} />
+                  <TitleComponent value={content.title || ''} icon={Phone} titleClass={titleClass} />
                   <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0"/>
@@ -656,7 +657,7 @@ export default function BuilderPage() {
             case 'socials':
                 return (
                     <div className="mt-6">
-                        <TitleComponent value={content.title || ''} icon={Share} />
+                        <TitleComponent value={content.title || ''} icon={Share} titleClass={titleClass} />
                         <div className="space-y-2">
                             {(content.items || []).map((item, index) => (
                                 <div key={item.id} className="relative group/item flex items-center gap-2">
@@ -695,14 +696,14 @@ export default function BuilderPage() {
           case 'cover_letter':
               return (
                   <div className="mt-6">
-                      <TitleComponent value={content.title || ''} icon={section.type === 'summary' ? FileText : Bot} />
+                      <TitleComponent value={content.title || ''} icon={section.type === 'summary' ? FileText : Bot} titleClass={titleClass} />
                       {isPreviewing ? <p className="whitespace-pre-wrap text-sm">{content.text}</p> : <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />}
                   </div>
               );
           case 'recommendations':
             return (
                 <div className="mt-6">
-                     <TitleComponent value={content.title || ''} icon={Quote}/>
+                     <TitleComponent value={content.title || ''} icon={Quote} titleClass={titleClass}/>
                      <div className="space-y-4">
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
@@ -757,7 +758,7 @@ export default function BuilderPage() {
                                             <p>{item.issuer}</p>
                                         </>}
                                         {section.type === 'links' && <a href={item.url} target="_blank" rel="noreferrer" className="font-semibold underline">{item.text}</a>}
-                                        <p className="text-sm text-muted-foreground">{item.dates}</p>
+                                        <p className="text-sm text-muted-foreground">{item.dates || item.date}</p>
                                         {['experience', 'projects', 'education'].includes(section.type) && <p className="whitespace-pre-wrap text-sm mt-1">{item.description}</p>}
                                     </>
                                  ) : (
@@ -792,7 +793,7 @@ export default function BuilderPage() {
                                             <Input placeholder="URL" value={item.url || ''} onChange={(e) => handleListItemChange(section.id, index, 'url', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                          </div>
                                      )}
-                                     <Input placeholder="Dates (e.g., 2020 - 2024)" value={item.dates || ''} onChange={(e) => handleListItemChange(section.id, index, 'dates', e.target.value)} className="text-sm text-muted-foreground border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
+                                     <Input placeholder="Dates (e.g., 2020 - 2024)" value={item.dates || item.date || ''} onChange={(e) => handleListItemChange(section.id, index, section.type === 'certifications' ? 'date' : 'dates', e.target.value)} className="text-sm text-muted-foreground border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                      {['experience', 'projects', 'education'].includes(section.type) && <Textarea placeholder="Description or key achievements..." value={item.description || ''} onChange={(e) => handleListItemChange(section.id, index, 'description', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0" />}
                                      </>
                                  )}
@@ -862,7 +863,7 @@ export default function BuilderPage() {
             case 'image':
               return (
                   <div className="mt-6">
-                      {!isPreviewing && <TitleComponent value={content.title || ''} icon={ImageIcon} />}
+                      {!isPreviewing && <TitleComponent value={content.title || ''} icon={ImageIcon} titleClass={titleClass} />}
                       <div className="relative group w-full" style={{ width: `${content.width}%`}}>
                           <Image
                               src={content.src || 'https://placehold.co/600x400.png'}
@@ -918,6 +919,9 @@ export default function BuilderPage() {
           const contactContent = contactSection ? resumeData.content[contactSection.id] : {};
           const socialsSection = resumeData.sections.find(s => s.type === 'socials');
           const socialsContent = socialsSection ? resumeData.content[socialsSection.id] : {};
+          const socialItems = socialsContent?.items || [];
+          const githubItem = socialItems.find(i => i.platform === 'github');
+          const linkedinItem = socialItems.find(i => i.platform === 'linkedin');
 
           return (
             <div className="p-10 space-y-6">
@@ -944,11 +948,11 @@ export default function BuilderPage() {
                   </div>
                    <div className="flex items-center gap-1">
                     <Github className="h-4 w-4"/>
-                    {isPreviewing ? <p>{(socialsContent?.items || []).find(i => i.platform === 'github')?.username}</p> : <Input placeholder="github.com/your-profile" value={(socialsContent?.items || []).find(i => i.platform === 'github')?.username || ''} onChange={(e) => handleListItemChange(socialsSection.id, (socialsContent?.items || []).findIndex(i => i.platform === 'github'), 'username', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
+                    {isPreviewing ? <p>{githubItem?.username}</p> : <Input placeholder="github.com/your-profile" value={githubItem?.username || ''} onChange={(e) => handleListItemChange(socialsSection.id, socialItems.findIndex(i => i.id === githubItem?.id), 'username', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
                   </div>
                    <div className="flex items-center gap-1">
                     <Linkedin className="h-4 w-4"/>
-                    {isPreviewing ? <p>{(socialsContent?.items || []).find(i => i.platform === 'linkedin')?.username}</p> : <Input placeholder="linkedin.com/in/your-profile" value={(socialsContent?.items || []).find(i => i.platform === 'linkedin')?.username || ''} onChange={(e) => handleListItemChange(socialsSection.id, (socialsContent?.items || []).findIndex(i => i.platform === 'linkedin'), 'username', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
+                    {isPreviewing ? <p>{linkedinItem?.username}</p> : <Input placeholder="linkedin.com/in/your-profile" value={linkedinItem?.username || ''} onChange={(e) => handleListItemChange(socialsSection.id, socialItems.findIndex(i => i.id === linkedinItem?.id), 'username', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />}
                   </div>
                 </div>
               </header>
@@ -1415,7 +1419,7 @@ export default function BuilderPage() {
     '--resume-accent-text-color': styling.accentTextColor,
     '--resume-background': theme === 'dark' ? styling.backgroundColorDark : styling.backgroundColorLight,
     '--resume-foreground': theme === 'dark' ? '#f8f8f8' : '#111111',
-    fontFamily: 'var(--resume-font-family)',
+    fontFamily: styling.fontFamily,
     backgroundColor: 'var(--resume-background)',
     color: 'var(--resume-foreground)'
   };
