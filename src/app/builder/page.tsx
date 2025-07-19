@@ -34,7 +34,7 @@ import {
   Languages,
   Loader2,
   Link as LinkIcon,
-  Map,
+  Map as MapIcon,
   Palette,
   QrCode,
   Save,
@@ -102,19 +102,19 @@ const templates = [
 ];
 
 const fonts = [
-  { name: 'Inter', family: 'font-body' },
-  { name: 'Space Grotesk', family: 'font-headline' },
-  { name: 'Roboto', family: "'Roboto', sans-serif" },
-  { name: 'Lato', family: "'Lato', sans-serif" },
-  { name: 'Montserrat', family: "'Montserrat', sans-serif" },
+  { name: 'Inter', family: 'var(--font-inter)' },
+  { name: 'Space Grotesk', family: 'var(--font-space-grotesk)' },
+  { name: 'Roboto', family: 'var(--font-roboto)' },
+  { name: 'Lato', family: 'var(--font-lato)' },
+  { name: 'Montserrat', family: 'var(--font-montserrat)' },
 ];
 
 const colors = [
-  { name: 'Default', value: 'hsl(244 46% 48%)' },
-  { name: 'Emerald', value: 'hsl(145 63% 42%)' },
-  { name: 'Rose', value: 'hsl(346 78% 52%)' },
-  { name: 'Amber', value: 'hsl(45 93% 47%)' },
-  { name: 'Slate', value: 'hsl(215 28% 17%)' },
+  { name: 'Default', value: '244 46% 48%' },
+  { name: 'Emerald', value: '145 63% 42%' },
+  { name: 'Rose', value: '346 78% 52%' },
+  { name: 'Amber', value: '45 93% 47%' },
+  { name: 'Slate', value: '215 28% 17%' },
 ];
 
 function DraggableSection({ id, name, icon }) {
@@ -164,11 +164,13 @@ export default function BuilderPage() {
   const sensors = useSensors(useSensor(PointerSensor));
 
   const handleColorChange = (colorValue) => {
-    document.documentElement.style.setProperty('--primary', colorValue.match(/\d+/g).join(' '));
+    document.documentElement.style.setProperty('--primary', colorValue);
     setActiveColor(colorValue);
   };
 
   const handleFontChange = (fontFamily) => {
+    document.documentElement.style.setProperty('--font-body', fontFamily);
+    document.documentElement.style.setProperty('--font-headline', fontFamily);
     setActiveFont(fontFamily);
   };
 
@@ -177,21 +179,32 @@ export default function BuilderPage() {
   const handleDragEnd = (event) => {
     const { active, over } = event;
     setActiveId(null);
+    if (!over) return;
 
-    if (active.id !== over?.id) {
-      if (over?.id === 'resume-canvas') {
+    if (over.id === 'resume-canvas' || over.id === 'resume-canvas-container' || over.id.startsWith('section-')) {
+        const overId = over.id.startsWith('section-') ? over.id.substring(8) : over.id;
         if (!resumeSections.includes(active.id)) {
-          setResumeSections((sections) => [...sections, active.id]);
+            const overIndex = resumeSections.indexOf(overId);
+            if(overIndex !== -1) {
+                setResumeSections((items) => {
+                    const newItems = [...items];
+                    newItems.splice(overIndex + 1, 0, active.id);
+                    return newItems;
+                });
+            } else {
+                 setResumeSections((sections) => [...sections, active.id]);
+            }
         }
-      } else {
-        setResumeSections((items) => {
-          const oldIndex = items.indexOf(active.id);
-          const newIndex = items.indexOf(over.id);
-          return arrayMove(items, oldIndex, newIndex);
-        });
-      }
+    } else {
+        const activeIndex = resumeSections.indexOf(active.id);
+        const overIndex = resumeSections.indexOf(over.id);
+
+        if (activeIndex !== overIndex) {
+            setResumeSections((items) => arrayMove(items, activeIndex, overIndex));
+        }
     }
   };
+
 
   const handleGetSuggestions = () => {
     startTransition(async () => {
@@ -244,12 +257,11 @@ export default function BuilderPage() {
           <div className="text-center">
             <Input
               defaultValue="Your Name"
-              className="text-4xl font-bold font-headline h-auto p-0 border-0 text-center focus-visible:ring-0"
-              style={{ fontFamily: activeFont === 'font-headline' ? 'Space Grotesk' : 'Inter' }}
+              className="text-4xl font-bold font-headline h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent"
             />
             <Input
               defaultValue="Your Tagline or Role"
-              className="text-muted-foreground p-0 border-0 h-auto text-center focus-visible:ring-0"
+              className="text-muted-foreground p-0 border-0 h-auto text-center focus-visible:ring-0 bg-transparent"
             />
           </div>
         );
@@ -257,14 +269,14 @@ export default function BuilderPage() {
         return (
           <div>
             <h2 className="text-xl font-bold font-headline mb-2 border-b-2 border-primary inline-block">Summary</h2>
-            <Textarea placeholder="Write a powerful summary to grab attention..." />
+            <Textarea placeholder="Write a powerful summary to grab attention..." className="bg-transparent" />
           </div>
         );
       case 'experience':
         return (
           <div className="mt-6">
             <h2 className="text-xl font-bold font-headline mb-2 border-b-2 border-primary inline-block">Experience</h2>
-            <Textarea placeholder="Detail your professional experience..." />
+            <Textarea placeholder="Detail your professional experience..." className="bg-transparent"/>
           </div>
         );
       default:
@@ -286,7 +298,7 @@ export default function BuilderPage() {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <TooltipProvider>
-        <div className="flex h-screen bg-muted/40" style={{ fontFamily: fonts.find(f => f.family === activeFont)?.family }}>
+        <div className="flex h-screen bg-muted/40" style={{ fontFamily: activeFont }}>
           {/* Sidebar */}
           <aside className="w-80 border-r bg-background">
             <Tabs defaultValue="content" className="flex flex-col h-full">
@@ -298,16 +310,16 @@ export default function BuilderPage() {
               <ScrollArea className="flex-1">
                 <TabsContent value="content" className="p-4">
                   <h3 className="mb-4 text-lg font-semibold">Resume Sections</h3>
-                  <SortableContext items={initialSections.Standard.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                  <SortableContext items={[...initialSections.Standard, ...initialSections.Advanced].map(s => s.id)} strategy={verticalListSortingStrategy}>
                     <div className="space-y-2">
                       <h4 className="font-medium text-sm text-muted-foreground">Standard</h4>
                       {initialSections.Standard.map((block) => (
                         <DraggableSection key={block.id} {...block} />
                       ))}
                     </div>
-                  </SortableContext>
+                  
                   <Separator className="my-4" />
-                   <SortableContext items={initialSections.Advanced.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                   
                     <div className="space-y-2">
                       <h4 className="font-medium text-sm text-muted-foreground">Advanced</h4>
                       {initialSections.Advanced.map((block) => (
@@ -334,14 +346,14 @@ export default function BuilderPage() {
                       {colors.map(color => (
                         <Tooltip key={color.name}>
                           <TooltipTrigger asChild>
-                            <div
+                            <button
                               onClick={() => handleColorChange(color.value)}
                               className="h-8 w-8 rounded-full cursor-pointer border-2"
                               style={{
-                                backgroundColor: color.value,
-                                borderColor: activeColor === color.value ? color.value : 'transparent',
+                                backgroundColor: `hsl(${color.value})`,
+                                borderColor: activeColor === color.value ? `hsl(${color.value})` : 'transparent',
                               }}
-                            ></div>
+                            ></button>
                           </TooltipTrigger>
                           <TooltipContent><p>{color.name}</p></TooltipContent>
                         </Tooltip>
@@ -383,7 +395,7 @@ export default function BuilderPage() {
                   </TooltipTrigger>
                   <TooltipContent><p>ATS Compliance: Good</p></TooltipContent>
                 </Tooltip>
-                <Button variant="outline" size="sm" onClick={() => setSaveStatus('Saving...')}>
+                <Button variant="outline" size="sm" onClick={() => { setSaveStatus('Saving...'); setTimeout(() => setSaveStatus('Saved'), 1000)}}>
                   <Save className="mr-2 h-4 w-4" />
                   Save
                 </Button>
