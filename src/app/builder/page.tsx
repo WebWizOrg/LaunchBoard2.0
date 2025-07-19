@@ -43,6 +43,7 @@ import {
   PanelRightOpen,
   Phone,
   Plus,
+  Quote,
   Save,
   Share2,
   Sparkles,
@@ -117,6 +118,7 @@ const initialSections = [
     { id: 'publications', icon: <Book />, name: 'Publications' },
     { id: 'achievements', icon: <Star />, name: 'Achievements' },
     { id: 'links', icon: <LinkIcon />, name: 'Links' },
+    { id: 'recommendations', icon: <Quote />, name: 'Recommendations' },
     { id: 'cover_letter', icon: <Bot />, name: 'Cover Letter' },
     { id: 'subtitle', icon: <Type />, name: 'Subtitle' },
     { id: 'line_break', icon: <Minus/>, name: 'Line Break' },
@@ -131,10 +133,10 @@ const allSectionsMap = new Map(
 );
 
 const templates = [
-  { name: 'Horizontal Split', id: 'horizontal-split', image: 'https://placehold.co/150x212.png', hint: 'resume template' },
-  { name: 'Modern', id: 'modern', image: 'https://placehold.co/150x212.png', hint: 'modern resume' },
-  { name: 'Creative', id: 'creative', image: 'https://placehold.co/150x212.png', hint: 'creative resume' },
   { name: 'Minimalist', id: 'minimalist', image: 'https://placehold.co/150x212.png', hint: 'minimalist resume' },
+  { name: 'Horizontal Split', id: 'horizontal-split', image: 'https://placehold.co/150x212.png', hint: 'resume template' },
+  { name: 'Vertical Split', id: 'vertical-split', image: 'https://placehold.co/150x212.png', hint: 'modern resume' },
+  { name: 'Creative', id: 'creative', image: 'https://placehold.co/150x212.png', hint: 'creative resume' },
 ];
 
 const fonts = [
@@ -234,6 +236,8 @@ const createNewItem = (itemType) => {
             return { ...common, name: '', issuer: '', date: '' };
         case 'links':
             return { ...common, text: 'Social Link', url: '' };
+        case 'recommendations':
+            return { ...common, author: '', text: '' };
         default:
             return { ...common, text: '' };
     }
@@ -266,6 +270,7 @@ export default function BuilderPage() {
   const [styling, setStyling] = useState({
       template: 'minimalist',
       accentColor: '#FFB700',
+      accentTextColor: '#ffffff',
       backgroundColorLight: '#ffffff',
       backgroundColorDark: '#1a202c',
       fontFamily: 'var(--font-inter)',
@@ -320,7 +325,7 @@ export default function BuilderPage() {
   const addListItem = (sectionId, itemType) => {
       setResumeData(prev => {
           const newItem = createNewItem(itemType);
-          const newItems = [...(prev.content[sectionId].items || []), newItem];
+          const newItems = [...(prev.content[sectionId]?.items || []), newItem];
           return {
               ...prev,
               content: {
@@ -413,7 +418,7 @@ export default function BuilderPage() {
       
       let defaultContent = { title: allSectionsMap.get(newSectionType)?.name || 'New Section' };
 
-      if (['experience', 'education', 'projects', 'certifications', 'links'].includes(newSectionType)) {
+      if (['experience', 'education', 'projects', 'certifications', 'links', 'recommendations'].includes(newSectionType)) {
           defaultContent.items = [];
       } else if (newSectionType === 'header') {
           defaultContent = { name: 'Your Name', tagline: 'Your Role', avatar: '', showAvatar: true, links: [] };
@@ -502,23 +507,23 @@ export default function BuilderPage() {
     }
   };
   
-    const renderSectionComponent = (section) => {
+    const renderSectionComponent = (section, templateContext = {}) => {
         const content = resumeData.content[section.id] || {};
-        const isHorizontalSplit = styling.template === 'horizontal-split';
+        const { isAccentBg } = templateContext;
 
-        const TitleInput = ({value, onChange, style}) => (
+        const TitleInput = ({value, onChange, ...props}) => (
              <Input 
                 value={value} 
-                onChange={onChange} 
+                onChange={(e) => onChange(e.target.value)} 
                 className="text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent inline-block w-auto mb-2" 
-                style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', ...style }}
+                style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', ...props.style }}
              />
         );
 
         switch (section.type) {
             case 'header':
               return (
-                <div className="text-center flex flex-col items-center gap-2">
+                <div className="flex flex-col items-center gap-2">
                     {content.showAvatar && (
                         <div className="relative group w-32 h-32">
                             <Image
@@ -560,7 +565,7 @@ export default function BuilderPage() {
             case 'contact':
               return (
                 <div className="mt-6">
-                  <TitleInput value={content.title} onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} />
+                  <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }} />
                   <div className="space-y-1">
                       <Input placeholder="Phone Number" value={content.phone} onChange={(e) => handleContentChange(section.id, 'phone', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                       <Input placeholder="Email Address" value={content.email} onChange={(e) => handleContentChange(section.id, 'email', e.target.value)} className="text-sm border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
@@ -572,10 +577,11 @@ export default function BuilderPage() {
           case 'cover_letter':
               return (
                   <div className="mt-6">
-                      <TitleInput value={content.title} onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} style={{color: isHorizontalSplit ? 'var(--resume-accent-color)' : 'inherit'}} />
+                      <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }}/>
                       <Textarea value={content.text} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
                   </div>
               );
+          case 'recommendations':
           case 'experience':
           case 'projects':
           case 'education':
@@ -584,7 +590,7 @@ export default function BuilderPage() {
             const itemType = section.type === 'links' ? 'links' : section.type.slice(0, -1);
             return (
                 <div className="mt-6">
-                     <TitleInput value={content.title} onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} style={{color: isHorizontalSplit ? 'var(--resume-accent-color)' : 'inherit'}}/>
+                     <TitleInput value={content.title} onChange={(val) => handleContentChange(section.id, 'title', val)} style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }}/>
                      <div className="space-y-4">
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
@@ -619,6 +625,12 @@ export default function BuilderPage() {
                                         <Input placeholder="URL" value={item.url} onChange={(e) => handleListItemChange(section.id, index, 'url', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                      </div>
                                  )}
+                                  {section.type === 'recommendations' && (
+                                     <>
+                                         <Textarea placeholder="Recommendation text..." value={item.text} onChange={(e) => handleListItemChange(section.id, index, 'text', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0 italic" />
+                                         <Input placeholder="Author Name, Title @ Company" value={item.author} onChange={(e) => handleListItemChange(section.id, index, 'author', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-right font-semibold" />
+                                     </>
+                                 )}
                                  <Input placeholder="Dates (e.g., 2020 - 2024)" value={item.dates} onChange={(e) => handleListItemChange(section.id, index, 'dates', e.target.value)} className="text-sm text-muted-foreground border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                  {['experience', 'projects', 'education'].includes(section.type) && <Textarea placeholder="Description or key achievements..." value={item.description} onChange={(e) => handleListItemChange(section.id, index, 'description', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0" />}
                              </div>
@@ -637,8 +649,8 @@ export default function BuilderPage() {
               <div className="mt-6">
                  <TitleInput 
                     value={content.title} 
-                    onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} 
-                    style={{color: isHorizontalSplit ? 'var(--resume-accent-color)' : 'inherit'}}
+                    onChange={(val) => handleContentChange(section.id, 'title', val)}
+                    style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }}
                 />
                 <Textarea value={content.text} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`e.g., Python, JavaScript, Public Speaking...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
               </div>
@@ -669,16 +681,84 @@ export default function BuilderPage() {
     };
 
     const renderTemplate = () => {
+        if (styling.template === 'vertical-split') {
+            const headerSection = resumeData.sections.find(s => s.type === 'header');
+            const headerContent = headerSection ? resumeData.content[headerSection.id] : {};
+
+            const leftSections = ['summary', 'contact', 'links', 'skills', 'languages', 'certifications'];
+            const rightSections = ['experience', 'education', 'projects', 'publications', 'achievements', 'recommendations'];
+            
+            const leftContent = resumeData.sections.filter(s => leftSections.includes(s.type));
+            const rightContent = resumeData.sections.filter(s => rightSections.includes(s.type));
+
+            return (
+                <div className='flex flex-col h-full'>
+                    <div className="h-[20%] p-6 flex items-center gap-6" style={{ backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-accent-text-color)' }}>
+                         {headerContent.showAvatar && (
+                            <div className="relative group w-32 h-32 flex-shrink-0">
+                                <Image
+                                    src={headerContent.avatar || 'https://placehold.co/128x128.png'}
+                                    alt="Avatar"
+                                    width={128}
+                                    height={128}
+                                    data-ai-hint="placeholder"
+                                    className="rounded-full object-cover w-32 h-32 border-2 border-current"
+                                />
+                                <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <ImageIcon className="h-8 w-8" />
+                                </label>
+                                <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                            </div>
+                        )}
+                        <div>
+                             <Input
+                                value={headerContent.name}
+                                onChange={(e) => handleContentChange(headerSection.id, 'name', e.target.value)}
+                                className="text-4xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent"
+                                style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: 'var(--resume-accent-text-color)' }}
+                            />
+                            <Input
+                                value={headerContent.tagline}
+                                onChange={(e) => handleContentChange(headerSection.id, 'tagline', e.target.value)}
+                                className="p-0 border-0 h-auto focus-visible:ring-0 bg-transparent opacity-80"
+                                style={{color: 'var(--resume-accent-text-color)'}}
+                            />
+                        </div>
+                    </div>
+                    <div className="h-[80%] flex">
+                        <div className="w-[30%] p-6">
+                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                                {leftContent.map((section) => (
+                                    <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
+                                    {renderSectionComponent(section, { isAccentBg: false })}
+                                    </SortableResumeSection>
+                                ))}
+                            </SortableContext>
+                        </div>
+                        <div className="w-[70%] p-6">
+                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
+                            {rightContent.map((section) => (
+                                <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
+                                {renderSectionComponent(section, { isAccentBg: false })}
+                                </SortableResumeSection>
+                            ))}
+                            </SortableContext>
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+
         if (styling.template === 'horizontal-split') {
-            const leftSections = ['header', 'summary', 'contact', 'links', 'publications', 'certifications', 'achievements'];
-            const rightSections = ['experience', 'education', 'projects', 'skills', 'languages'];
+            const leftSections = ['header', 'summary', 'contact', 'links', 'skills', 'languages', 'certifications', 'achievements'];
+            const rightSections = ['experience', 'education', 'projects', 'publications', 'recommendations'];
 
             const leftContent = resumeData.sections.filter(s => leftSections.includes(s.type));
             const rightContent = resumeData.sections.filter(s => ![...leftSections, 'line_break', 'subtitle', 'cover_letter'].includes(s.type));
             
             return (
                 <div className="flex h-full">
-                    <div className="w-[30%] p-6 relative" style={{'--resume-accent-bg-text-color': 'var(--resume-inverted-foreground)', backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-accent-bg-text-color)'}}>
+                    <div className="w-[30%] p-6 relative" style={{ backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-accent-text-color)' }}>
                         {styling.accentPattern && (
                              <div className="absolute inset-0 bg-repeat bg-center opacity-10" style={{backgroundImage: `url(${styling.accentPattern})`}}></div>
                         )}
@@ -686,17 +766,17 @@ export default function BuilderPage() {
                            <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
                               {leftContent.map((section) => (
                                  <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
-                                  {renderSectionComponent(section)}
+                                  {renderSectionComponent(section, { isAccentBg: true })}
                                 </SortableResumeSection>
                               ))}
                             </SortableContext>
                         </div>
                     </div>
-                    <div className="w-[70%] p-6" style={{'--resume-right-text-color': 'var(--resume-foreground)', color: 'var(--resume-foreground)'}}>
+                    <div className="w-[70%] p-6">
                         <SortableContext items={resumeSectionsIds} strategy={verticalListSortingStrategy}>
                           {rightContent.map((section) => (
                              <SortableResumeSection key={section.id} id={section.id} onRemove={removeSection}>
-                              {renderSectionComponent(section)}
+                              {renderSectionComponent(section, { isAccentBg: false })}
                             </SortableResumeSection>
                           ))}
                         </SortableContext>
@@ -721,9 +801,9 @@ export default function BuilderPage() {
 
   const resumeStyle = {
     '--resume-accent-color': styling.accentColor,
+    '--resume-accent-text-color': styling.accentTextColor,
     '--resume-background': theme === 'dark' ? styling.backgroundColorDark : styling.backgroundColorLight,
     '--resume-foreground': theme === 'dark' ? '#f8f8f8' : '#111111',
-    '--resume-inverted-foreground': theme === 'dark' ? '#111111' : '#f8f8f8',
     '--resume-font-family': styling.fontFamily,
     '--resume-font-headline': styling.fontFamily,
     fontFamily: 'var(--resume-font-family)',
@@ -782,6 +862,10 @@ export default function BuilderPage() {
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="accentColor">Accent</Label>
                                 <Input id="accentColor" type="color" value={styling.accentColor} onChange={(e) => handleStyleChange('accentColor', e.target.value)} className="w-24 p-1 h-8" />
+                            </div>
+                             <div className="flex items-center justify-between">
+                                <Label htmlFor="accentTextColor">Accent Text</Label>
+                                <Input id="accentTextColor" type="color" value={styling.accentTextColor} onChange={(e) => handleStyleChange('accentTextColor', e.target.value)} className="w-24 p-1 h-8" />
                             </div>
                         </div>
                     </div>
