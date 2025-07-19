@@ -573,21 +573,24 @@ export default function BuilderPage() {
             if (section.type === 'projects' && (!content.items || content.items.length === 0)) return null;
         }
 
-        const TitleComponent = ({value, icon: Icon, className, ...props}) => (
-            <div className="flex items-center gap-3 mb-2">
-                {Icon && <Icon className="h-6 w-6" style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }} />}
-                {isPreviewing ? (
-                    <div className={cn("text-xl font-bold w-full", titleClass, className)} {...props}>{value}</div>
-                ) : (
-                    <Input 
-                        value={value || ''} 
-                        onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} 
-                        className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", titleClass, className)} 
-                        style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)', ...props.style }}
-                    />
-                )}
-            </div>
-        );
+        const TitleComponent = ({value, icon: Icon, className, ...props}) => {
+            const { titleClass, ...restProps} = props;
+            return (
+                <div className="flex items-center gap-3 mb-2">
+                    {Icon && <Icon className="h-6 w-6" style={{ color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }} />}
+                    {isPreviewing ? (
+                        <div className={cn("text-xl font-bold w-full", titleClass, className)} {...restProps}>{value}</div>
+                    ) : (
+                        <Input 
+                            value={value || ''} 
+                            onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} 
+                            className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", titleClass, className)} 
+                            style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)', ...restProps.style }}
+                        />
+                    )}
+                </div>
+            )
+        };
 
 
         switch (section.type) {
