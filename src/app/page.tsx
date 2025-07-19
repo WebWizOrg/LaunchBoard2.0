@@ -1,3 +1,6 @@
+// src/app/page.tsx
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -8,6 +11,7 @@ import {
   Palette,
   Share2,
   Bot,
+  Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,29 +32,22 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function Home() {
+  const { user } = useAuth();
+
   const templates = [
-    { name: 'Minimalist',
-      image: 'https://placehold.co/400x566.png',
-      hint: 'resume template'
-    },
-    { name: 'Modern',
-      image: 'https://placehold.co/400x566.png',
-      hint: 'resume modern'
-    },
-    { name: 'Creative',
-      image: 'https://placehold.co/400x566.png',
-      hint: 'creative resume'
-    },
-    { name: 'Academic',
-      image: 'https://placehold.co/400x566.png',
-      hint: 'academic resume'
-    },
-     { name: 'Professional',
-      image: 'https://placehold.co/400x566.png',
-      hint: 'professional resume'
-    },
+    { name: 'Horizontal Split', id: 'horizontal-split', image: 'https://placehold.co/400x566.png', hint: 'resume template' },
+    { name: 'Vertical Split', id: 'vertical-split', image: 'https://placehold.co/400x566.png', hint: 'modern resume' },
+    { name: 'Classic', id: 'classic', image: 'https://placehold.co/400x566.png', hint: 'classic resume' },
+    { name: 'ATS-Friendly', id: 'ats-friendly', image: 'https://placehold.co/400x566.png', hint: 'ATS resume' },
+    { name: 'Creative', id: 'creative', image: 'https://placehold.co/400x566.png', hint: 'creative resume' },
+    { name: 'Student', id: 'student', image: 'https://placehold.co/400x566.png', hint: 'student resume' },
+    { name: 'Developer', id: 'developer', image: 'https://placehold.co/400x566.png', hint: 'developer resume' },
+    { name: 'Minimal CV', id: 'minimal-cv', image: 'https://placehold.co/400x566.png', hint: 'minimal cv' },
+    { name: 'Two-Column Balanced', id: 'two-column-balanced', image: 'https://placehold.co/400x566.png', hint: 'two column resume' },
+    { name: 'Showcase First', id: 'showcase-first', image: 'https://placehold.co/400x566.png', hint: 'portfolio resume' },
   ];
 
   const testimonials = [
@@ -136,7 +133,7 @@ export default function Home() {
               <Carousel opts={{ align: "start", loop: true, }} className="w-full">
                 <CarouselContent>
                   {templates.map((template, index) => (
-                    <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                    <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                       <div className="p-1">
                         <Card className="overflow-hidden group">
                           <CardContent className="p-0">
@@ -160,6 +157,13 @@ export default function Home() {
                 <CarouselPrevious className="hidden sm:flex" />
                 <CarouselNext className="hidden sm:flex" />
               </Carousel>
+            </div>
+             <div className="text-center mt-12">
+                <Button size="lg" variant="outline" disabled={!user}>
+                    <Upload className="mr-2 h-5 w-5" />
+                    Upload Template
+                </Button>
+                {!user && <p className="text-sm text-muted-foreground mt-2">You must be logged in to upload a template.</p>}
             </div>
           </div>
         </section>
