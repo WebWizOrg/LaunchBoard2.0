@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Rocket, Twitter, Github, Linkedin } from "lucide-react";
 import { usePathname } from 'next/navigation';
