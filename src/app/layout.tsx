@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { Inter, Space_Grotesk, Roboto, Lato, Montserrat, Poppins, Open_Sans, Merriweather, Playfair_Display } from 'next/font/google';
 import './globals.css';
@@ -62,7 +63,7 @@ const playfairDisplay = Playfair_Display({
 
 export const metadata: Metadata = {
   title: 'LAUNCHBOARD',
-  description: 'Build. Share. Get Hired.',
+  description: 'Verified. Amplified. Launched.',
 };
 
 function FullPageLoader() {

@@ -21,7 +21,7 @@ export function SiteFooter() {
             <Link href="/" className="flex items-center space-x-2 mb-4">
                <Image src="/logo.png" alt="Launchboard Logo" width={150} height={40} className="dark:invert"/>
             </Link>
-            <p className="text-sm text-muted-foreground">Build. Share. Get Hired.</p>
+            <p className="text-sm text-muted-foreground">Verified. Amplified. Launched.</p>
           </div>
           <div>
             <h4 className="font-semibold mb-3">Product</h4>

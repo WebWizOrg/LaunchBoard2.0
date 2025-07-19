@@ -1,3 +1,4 @@
+
 // src/app/page.tsx
 'use client';
 
@@ -98,7 +99,7 @@ export default function Home() {
               Now with AI-Powered Suggestions
             </Badge>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-headline mt-6 tracking-tighter">
-              Build. Share. Get Hired.
+              Verified. Amplified. Launched.
             </h1>
             <p className="max-w-2xl mx-auto mt-4 text-lg md:text-xl text-muted-foreground">
               The ultimate platform to create stunning resumes and portfolios that impress recruiters and land you your dream job.
