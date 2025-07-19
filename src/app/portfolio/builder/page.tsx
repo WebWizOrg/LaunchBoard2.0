@@ -223,7 +223,6 @@ export default function PortfolioBuilderPage() {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [portfolioData, setPortfolioData] = useState<DocumentData | null>(null);
 
-  // All hooks must be called unconditionally at the top level.
   const sensors = useSensors(useSensor(PointerSensor));
 
   const debouncedSave = useCallback(
@@ -274,7 +273,6 @@ export default function PortfolioBuilderPage() {
     return () => unsubscribe();
   }, [user, portfolioId, router]);
 
-  // Conditional rendering check is now after all hooks have been called.
   if (!isDataLoaded || !portfolioData) {
     return (
       <div className="flex items-center justify-center h-screen bg-muted">
