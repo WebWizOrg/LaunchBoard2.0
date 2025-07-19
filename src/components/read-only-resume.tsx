@@ -64,8 +64,17 @@ export function ReadOnlyResume({ resumeId }: { resumeId: string }) {
             ...data,
             styling: { ...defaultResumeData.styling, ...data.styling, backgroundBlur: 0 },
           });
-          // Increment view count
-          await updateDoc(resumeRef, { views: increment(1) });
+          
+          // Analytics Tracking
+          const visitedKey = `visited_resume_${resumeId}`;
+          const hasVisited = localStorage.getItem(visitedKey);
+          const updates: {[key: string]: any} = { views: increment(1) };
+          if (!hasVisited) {
+            updates.uniqueVisitors = increment(1);
+            localStorage.setItem(visitedKey, 'true');
+          }
+          await updateDoc(resumeRef, updates);
+
         } else {
           setResumeData(null); // Will trigger notFound()
         }

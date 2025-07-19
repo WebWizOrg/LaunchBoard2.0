@@ -44,8 +44,17 @@ export function ReadOnlyPortfolio({ portfolioId }: { portfolioId: string }) {
             ...data,
             styling: { ...defaultPortfolioData.styling, ...data.styling },
           });
-          // Increment view count
-          await updateDoc(portfolioRef, { views: increment(1) });
+          
+          // Analytics Tracking
+          const visitedKey = `visited_portfolio_${portfolioId}`;
+          const hasVisited = localStorage.getItem(visitedKey);
+          const updates: { [key: string]: any } = { views: increment(1) };
+          if (!hasVisited) {
+            updates.uniqueVisitors = increment(1);
+            localStorage.setItem(visitedKey, 'true');
+          }
+          await updateDoc(portfolioRef, updates);
+
         } else {
           setPortfolioData(null); // Will trigger notFound()
         }

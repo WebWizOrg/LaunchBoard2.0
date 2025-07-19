@@ -19,7 +19,7 @@ import {
   Facebook,
   LayoutTemplate
 } from "lucide-react";
-import { collection, query, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, orderBy, getDoc, setDoc, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, orderBy, getDoc, setDoc, where, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDistanceToNow } from 'date-fns';
@@ -90,6 +90,18 @@ function SocialShareDialog({ docId, docName, docType }) {
     const { toast } = useToast();
     const shareUrl = `${window.location.origin}/${docType === 'resume' ? 'share' : 'portfolio/share'}/${docId}`;
     
+    const handleShare = async (platform) => {
+        if (!docId || !docType) return;
+        const collectionName = docType === 'resume' ? 'publishedResumes' : 'publishedPortfolios';
+        const docRef = doc(db, collectionName, docId);
+        try {
+            await updateDoc(docRef, { shares: increment(1) });
+        } catch (e) {
+            // This might fail if the doc isn't published yet, which is fine.
+            console.warn("Could not update share count, document may not be published.", e)
+        }
+    };
+    
     const socialLinks = {
         linkedin: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(`Check out my ${docType}: ${docName}`)}`,
         twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`Check out my ${docType}: ${docName}`)}`,
@@ -115,17 +127,17 @@ function SocialShareDialog({ docId, docName, docType }) {
                     </Button>
                 </div>
                 <div className="flex justify-center gap-4">
-                     <Button variant="outline" asChild>
+                     <Button variant="outline" asChild onClick={() => handleShare('linkedin')}>
                         <a href={socialLinks.linkedin} target="_blank" rel="noopener noreferrer">
                             <Linkedin className="mr-2 h-4 w-4" /> LinkedIn
                         </a>
                     </Button>
-                    <Button variant="outline" asChild>
+                    <Button variant="outline" asChild onClick={() => handleShare('twitter')}>
                          <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer">
                             <Twitter className="mr-2 h-4 w-4" /> Twitter
                         </a>
                     </Button>
-                    <Button variant="outline" asChild>
+                    <Button variant="outline" asChild onClick={() => handleShare('facebook')}>
                          <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer">
                             <Facebook className="mr-2 h-4 w-4" /> Facebook
                         </a>
@@ -155,49 +167,78 @@ export default function Dashboard() {
         const timeB = b.updatedAt?.toMillis() || 0;
         return timeB - timeA;
     };
-
-    const resumesQuery = query(collection(db, `users/${user.uid}/resumes`), orderBy('updatedAt', 'desc'));
-    const portfoliosQuery = query(collection(db, `users/${user.uid}/portfolios`), orderBy('updatedAt', 'desc'));
-
-    const unsubscribeResumes = onSnapshot(resumesQuery, (querySnapshot) => {
-        const resumesData = querySnapshot.docs.map(doc => ({ id: doc.id, type: 'resume', ...doc.data() }));
-        setDocuments(prev => {
-            const otherDocs = prev.filter(d => d.type !== 'resume');
-            const allDocs = [...resumesData, ...otherDocs].sort(sortDocs);
-            updateAnalytics(allDocs);
-            return allDocs;
-        });
-        setLoading(false);
-    });
-
-    const unsubscribePortfolios = onSnapshot(portfoliosQuery, (querySnapshot) => {
-        const portfoliosData = querySnapshot.docs.map(doc => ({ id: doc.id, type: 'portfolio', ...doc.data() }));
-        setDocuments(prev => {
-            const otherDocs = prev.filter(d => d.type !== 'portfolio');
-            const allDocs = [...portfoliosData, ...otherDocs].sort(sortDocs);
-            updateAnalytics(allDocs);
-            return allDocs;
-        });
-        setLoading(false);
-    });
     
+    const fetchAndCombineDocs = async () => {
+        if (!user) return;
+        
+        const resumesQuery = query(collection(db, `users/${user.uid}/resumes`), orderBy('updatedAt', 'desc'));
+        const portfoliosQuery = query(collection(db, `users/${user.uid}/portfolios`), orderBy('updatedAt', 'desc'));
+
+        const unsubscribeResumes = onSnapshot(resumesQuery, (resumesSnapshot) => {
+            const resumesData = resumesSnapshot.docs.map(doc => ({ id: doc.id, type: 'resume', ...doc.data() }));
+            setDocuments(currentDocs => {
+                const otherDocs = currentDocs.filter(d => d.type !== 'resume');
+                const combined = [...resumesData, ...otherDocs].sort(sortDocs);
+                return combined;
+            });
+            setLoading(false);
+        });
+
+        const unsubscribePortfolios = onSnapshot(portfoliosQuery, (portfoliosSnapshot) => {
+            const portfoliosData = portfoliosSnapshot.docs.map(doc => ({ id: doc.id, type: 'portfolio', ...doc.data() }));
+            setDocuments(currentDocs => {
+                const otherDocs = currentDocs.filter(d => d.type !== 'portfolio');
+                const combined = [...portfoliosData, ...otherDocs].sort(sortDocs);
+                return combined;
+            });
+            setLoading(false);
+        });
+
+        return () => {
+            unsubscribeResumes();
+            unsubscribePortfolios();
+        };
+    };
+
+    fetchAndCombineDocs();
+
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Listen to all published resumes for analytics
+    const pubResumesQuery = query(collection(db, 'publishedResumes'), where('ownerId', '==', user.uid));
+    const pubPortfoliosQuery = query(collection(db, 'publishedPortfolios'), where('ownerId', '==', user.uid));
+
+    let allPublishedDocs = [];
+
+    const unsubscribePubResumes = onSnapshot(pubResumesQuery, (snapshot) => {
+      const resumeDocs = snapshot.docs.map(doc => doc.data());
+      allPublishedDocs = [...resumeDocs, ...allPublishedDocs.filter(d => d.type !== 'resume')];
+      updateAnalytics(allPublishedDocs);
+    });
+
+    const unsubscribePubPortfolios = onSnapshot(pubPortfoliosQuery, (snapshot) => {
+      const portfolioDocs = snapshot.docs.map(doc => doc.data());
+      allPublishedDocs = [...portfolioDocs, ...allPublishedDocs.filter(d => d.type !== 'portfolio')];
+      updateAnalytics(allPublishedDocs);
+    });
+
     const updateAnalytics = (docs) => {
-        const publishedDocs = docs.filter(r => r.isPublished);
-        if (publishedDocs.length > 0) {
-            const totalViews = publishedDocs.reduce((acc, r) => acc + (r.views || 0), 0);
-            const uniqueVisitors = publishedDocs.reduce((acc, r) => acc + (r.uniqueVisitors || 0), 0);
-            const totalShares = publishedDocs.reduce((acc, r) => acc + (r.shares || 0), 0);
-            setAnalytics({ totalViews, uniqueVisitors, totalShares });
-        } else {
-            setAnalytics({ totalViews: 0, uniqueVisitors: 0, totalShares: 0 });
-        }
-    }
+      const totalViews = docs.reduce((acc, r) => acc + (r.views || 0), 0);
+      const uniqueVisitors = docs.reduce((acc, r) => acc + (r.uniqueVisitors || 0), 0);
+      const totalShares = docs.reduce((acc, r) => acc + (r.shares || 0), 0);
+      setAnalytics({ totalViews, uniqueVisitors, totalShares });
+    };
 
     return () => {
-      unsubscribeResumes();
-      unsubscribePortfolios();
+      unsubscribePubResumes();
+      unsubscribePubPortfolios();
     };
+
   }, [user]);
+
 
   const createNewDoc = async (type: 'resume' | 'portfolio') => {
     if (!user) return;
@@ -208,6 +249,9 @@ export default function Dashboard() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         isPublished: true, // Published by default
+        views: 0,
+        uniqueVisitors: 0,
+        shares: 0,
       };
       const newDocRef = await addDoc(collection(db, `users/${user.uid}/${collectionName}`), newDocData);
 
@@ -254,6 +298,9 @@ export default function Dashboard() {
                 isPublished: false,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
+                views: 0,
+                uniqueVisitors: 0,
+                shares: 0,
             };
             const newDocRef = await addDoc(collection(db, `users/${user.uid}/${collectionName}`), newDocData);
             toast({ title: 'Document duplicated!', description: `Created "${newDocData.name}"` });
