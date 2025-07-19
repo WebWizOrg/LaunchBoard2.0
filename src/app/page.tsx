@@ -146,11 +146,11 @@ export default function Home() {
                   align: "start",
                   loop: true,
                 }}
-                className="w-full max-w-5xl mx-auto"
+                className="w-full max-w-6xl mx-auto"
               >
-                <CarouselContent>
+                <CarouselContent className="-ml-4">
                   {templates.map((template, index) => (
-                    <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                    <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
                       <div className="p-1">
                         <Card className="overflow-hidden group w-full h-auto">
                             <CardContent className="p-0">
@@ -171,8 +171,8 @@ export default function Home() {
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
+                <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10" />
+                <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10" />
               </Carousel>
             </div>
              <div className="text-center mt-12">
