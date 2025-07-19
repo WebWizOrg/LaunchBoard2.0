@@ -1,3 +1,4 @@
+
 // src/app/portfolio/share/[id]/page.tsx
 import { ReadOnlyPortfolio } from '@/components/read-only-portfolio';
 import { Rocket } from 'lucide-react';
