@@ -42,6 +42,11 @@ import {
 } from "@/components/ui/carousel"
 import { BeforeAfterSlider } from '@/components/before-after-slider';
 import Autoplay from "embla-carousel-autoplay"
+import TextPressure from '@/TextPressure/TextPressure';
+import ScrambledText from '@/ScrambledText/ScrambledText';
+import ScrollVelocity from '@/ScrollVelocity/ScrollVelocity';
+import CurvedLoop from '@/CurvedLoop/CurvedLoop';
+import ShinyText from '@/ShinyText/ShinyText';
 
 
 export default function Home() {
@@ -107,9 +112,17 @@ export default function Home() {
             <Badge variant="outline" className="py-1 px-4 rounded-full bg-accent/10 border-accent/30 text-accent font-medium">
               Now with AI-Powered Suggestions
             </Badge>
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-headline mt-6 tracking-tighter">
-              Verified. Amplified. Launched.
-            </h1>
+            <div className="mt-6 flex flex-col items-center justify-center space-y-2">
+                <div style={{position: 'relative', height: '100px', width: '100%'}}>
+                    <TextPressure text="Verified." flex={true} width={true} weight={true} italic={true} textColor="#ffffff" minFontSize={72} />
+                </div>
+                <div style={{position: 'relative', height: '100px', width: '100%'}}>
+                     <TextPressure text="Amplified." flex={true} width={true} weight={true} italic={true} textColor="#ffffff" minFontSize={72} />
+                </div>
+                <div style={{position: 'relative', height: '100px', width: '100%'}}>
+                    <TextPressure text="Launched." flex={true} width={true} weight={true} italic={true} textColor="#ffffff" minFontSize={72} />
+                </div>
+            </div>
             <p className="max-w-2xl mx-auto mt-4 text-lg md:text-xl text-muted-foreground">
               The ultimate platform to create stunning resumes and portfolios that impress recruiters and land you your dream job.
             </p>
@@ -157,9 +170,7 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-bold font-headline">
                 Experience the Magic of AI
               </h2>
-              <p className="max-w-2xl mx-auto mt-4 text-lg text-muted-foreground">
-                Don't know where to start? Let our AI generate a sample resume for you in seconds.
-              </p>
+               <ShinyText text="Don't know where to start? Let our AI generate a sample resume for you in seconds." className='max-w-2xl mx-auto mt-4 text-lg !text-muted-foreground' />
             </div>
             <div className="max-w-4xl mx-auto mt-12">
               <AiResumeDemo />
@@ -169,15 +180,16 @@ export default function Home() {
 
         {/* Watermark Showcase Section */}
         <section id="watermark" className="py-16 md:py-24 bg-background">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="text-center">
+          <div className="container mx-auto px-4 md:px-6 text-center">
               <h2 className="text-3xl md:text-4xl font-bold font-headline">
-                Protect Your Work with Watermarks
+                Protect Your Work
               </h2>
-              <p className="max-w-2xl mx-auto mt-4 text-lg text-muted-foreground">
-                Automatically add a personalized watermark to your uploaded images to protect your creative assets.
-              </p>
-            </div>
+               <ScrambledText
+                  className="max-w-2xl mx-auto mt-4 !text-lg !text-muted-foreground !font-sans"
+                  scrambleChars='*#@!?'
+                >
+                  Automatically add a personalized watermark to your uploaded images to protect your creative assets.
+                </ScrambledText>
             <div className="max-w-3xl mx-auto mt-12">
               <BeforeAfterSlider
                   before={
@@ -191,7 +203,7 @@ export default function Home() {
                       />
                   }
                   after={
-                      <div className="relative">
+                     <div className="relative w-full h-full overflow-hidden rounded-lg">
                            <Image
                               src="/images/example.png"
                               alt="After"
@@ -200,9 +212,9 @@ export default function Home() {
                               className="w-full h-auto object-cover"
                               data-ai-hint="artistic photo"
                            />
-                           <div className="absolute bottom-2 left-2 bg-black/60 text-white text-sm p-2 rounded-md pointer-events-none z-20">
-                               <p className="font-bold">Your Name</p>
-                               <p className="text-white/80 text-xs">your.email@example.com</p>
+                           <div className="absolute bottom-4 left-4 bg-black/60 text-white text-base p-3 rounded-lg pointer-events-none z-20 shadow-lg">
+                               <p className="font-bold text-lg">Your Name</p>
+                               <p className="text-white/80">your.email@example.com</p>
                            </div>
                       </div>
                   }
@@ -210,10 +222,12 @@ export default function Home() {
             </div>
           </div>
         </section>
+        
+        <ScrollVelocity texts={['Build. Share. Get Hired.', 'Launch Your Career Today.']} velocity={-50} className="text-5xl md:text-7xl lg:text-8xl font-headline" />
 
 
         {/* Marketplace Section */}
-        <section id="marketplace" className="py-16 md:py-24 bg-secondary/50">
+        <section id="marketplace-preview" className="py-16 md:py-24 bg-secondary/50">
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center">
               <h2 className="text-3xl md:text-4xl font-bold font-headline">
@@ -262,11 +276,12 @@ export default function Home() {
               </Carousel>
             </div>
              <div className="text-center mt-12">
-                <Button size="lg" variant="outline" onClick={handleUploadClick}>
-                    <Upload className="mr-2 h-5 w-5" />
-                    Upload Template
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/marketplace">
+                    Explore All Templates
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
                 </Button>
-                {!user && <p className="text-sm text-muted-foreground mt-2">You must be logged in to upload a template.</p>}
             </div>
           </div>
         </section>
@@ -308,6 +323,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+        
+        <CurvedLoop marqueeText="Launch Your Career ✦ Stand Out From The Crowd ✦" speed={1.5} />
 
         {/* CTA Section */}
         <section className="py-16 md:py-24 bg-secondary/50">
