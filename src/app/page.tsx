@@ -106,9 +106,6 @@ export default function Home() {
         <section className="relative w-full py-20 md:py-32 lg:py-40 bg-background overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] [mask-image:radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(255,255,255,0.7),rgba(255,255,255,0))]"></div>
           <div className="container mx-auto px-4 md:px-6 text-center relative z-10">
-            <Badge variant="outline" className="py-1 px-4 rounded-full bg-accent/10 border-accent/30 text-accent font-medium">
-              Now with AI-Powered Suggestions
-            </Badge>
             <div className="mt-6 flex flex-col items-center justify-center space-y-2">
                 <div style={{position: 'relative', height: '200px', width: '100%'}}>
                     <TextPressure text="Verified." flex={true} width={true} weight={true} italic={true} textColor="#4842B3" minFontSize={72} />
@@ -141,6 +138,9 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-bold font-headline">
                 See LaunchPad in Action
               </h2>
+               <Badge variant="outline" className="py-1 px-4 mt-4 rounded-full bg-accent/10 border-accent/30 text-accent font-medium">
+                Now with AI-Powered Suggestions
+              </Badge>
               <p className="max-w-2xl mx-auto mt-4 text-lg text-muted-foreground">
                 Watch our quick introduction to see how you can build a stunning portfolio in minutes.
               </p>
@@ -183,7 +183,10 @@ export default function Home() {
               </h2>
                <ScrambledText
                   className="max-w-2xl mx-auto mt-4 !text-lg !text-muted-foreground !font-sans"
-                  scrambleChars='*#@!?'
+                  radius={100}
+                  duration={1.2}
+                  speed={0.5}
+                  scrambleChars=".:"
                 >
                   Automatically add a personalized watermark to your uploaded images to protect your creative assets.
                 </ScrambledText>
