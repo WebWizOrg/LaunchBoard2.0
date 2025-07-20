@@ -1,3 +1,4 @@
+
 // src/app/page.tsx
 'use client';
 
@@ -178,9 +179,12 @@ export default function Home() {
         {/* Watermark Showcase Section */}
         <section id="watermark" className="py-16 md:py-24 bg-background">
           <div className="container mx-auto px-4 md:px-6 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold font-headline">
-                Protect Your Work
-              </h2>
+                <ScrambledText
+                    className="!m-0 !max-w-full text-3xl md:text-4xl !text-foreground font-bold font-headline"
+                    scrambleChars=".:"
+                >
+                    Protect Your Work
+                </ScrambledText>
                <ScrambledText
                   className="max-w-2xl mx-auto mt-4 !text-lg !text-muted-foreground !font-sans"
                   radius={100}
