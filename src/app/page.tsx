@@ -5,6 +5,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import React, { useRef } from 'react';
 import {
   ArrowRight,
   ChevronRight,
@@ -40,6 +41,8 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import { BeforeAfterSlider } from '@/components/before-after-slider';
+import Autoplay from "embla-carousel-autoplay"
+
 
 export default function Home() {
   const { user } = useAuth();
@@ -90,6 +93,10 @@ export default function Home() {
     },
   ];
 
+  const plugin = React.useRef(
+    Autoplay({ delay: 2000, stopOnInteraction: true })
+  )
+
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-1">
@@ -132,7 +139,7 @@ export default function Home() {
               <div className="relative aspect-video">
                   <iframe
                       className="absolute top-0 left-0 w-full h-full"
-                      src="https://www.youtube.com/embed/qy1Unva9N3I"
+                      src="https://www.youtube.com/embed/qy1Unva9N3I?autoplay=1&mute=1"
                       title="YouTube video player"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -218,11 +225,14 @@ export default function Home() {
             </div>
              <div className="mt-12">
                <Carousel
+                plugins={[plugin.current]}
                 opts={{
                   align: "start",
                   loop: true,
                 }}
                 className="w-full max-w-6xl mx-auto"
+                onMouseEnter={plugin.current.stop}
+                onMouseLeave={plugin.current.reset}
               >
                 <CarouselContent className="-ml-4">
                   {templates.map((template, index) => (
