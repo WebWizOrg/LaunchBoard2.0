@@ -93,7 +93,7 @@ export function SiteHeader() {
                       <SheetDescription className="sr-only">Main navigation links for the site.</SheetDescription>
                     </SheetHeader>
                     <Link href="/" className="flex items-center space-x-2 mb-6">
-                      <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} className="dark:invert-0 invert"/>
+                      <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} />
                     </Link>
                     <nav className="flex flex-col space-y-3">
                         {navLinks.map(link => (
@@ -115,7 +115,7 @@ export function SiteHeader() {
             {/* Left: Logo */}
             <div className="flex-1 flex justify-start">
                 <Link href="/" className="flex items-center space-x-2">
-                    <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} className="dark:invert-0 invert"/>
+                    <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} />
                 </Link>
             </div>
 
@@ -125,7 +125,7 @@ export function SiteHeader() {
                 <Link
                     key={link.name}
                     href={link.href}
-                    className="transition-colors hover:text-foreground/80 text-foreground/60"
+                    className="transition-colors text-gray-300 dark:text-foreground/60 hover:text-white dark:hover:text-foreground/80"
                 >
                     {link.name}
                 </Link>
@@ -169,7 +169,7 @@ export function SiteHeader() {
                         </DropdownMenu>
                     ) : (
                         <>
-                        <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }))}>
+                        <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }), "text-gray-50 dark:text-foreground")}>
                             Log in
                         </Link>
                         <Link href="/signup" className={cn(buttonVariants({ variant: "default" }), "bg-primary hover:bg-primary/90 text-primary-foreground")}>
@@ -186,7 +186,7 @@ export function SiteHeader() {
         {/* Mobile: Logo centered when nav is open, Auth buttons on the right */}
         <div className="flex flex-1 justify-end items-center md:hidden">
             <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-2">
-                 <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} className="dark:invert-0 invert"/>
+                 <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} />
             </Link>
             <div className="flex items-center gap-2">
                 {!loading && !user && <ThemeToggle />}
