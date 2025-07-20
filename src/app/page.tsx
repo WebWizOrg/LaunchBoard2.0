@@ -71,23 +71,23 @@ export default function Home() {
 
   const testimonials = [
     {
-      name: 'Sarah L.',
+      name: 'Jhon Doe.',
       title: 'Software Engineer at TechCorp',
-      avatar: 'https://placehold.co/48x48.png',
+      avatar: '/images/person1.jpeg',
       hint: 'woman portrait',
       text: 'LaunchPad helped me create a professional resume in minutes. The AI suggestions were a game-changer and I landed my dream job!',
     },
     {
       name: 'Michael B.',
       title: 'UX Designer',
-      avatar: 'https://placehold.co/48x48.png',
+      avatar: '/images/person2.jpeg',
       hint: 'man portrait',
       text: 'The templates are beautiful and so easy to customize. I finally have a portfolio that truly represents my work. Highly recommended!',
     },
     {
-      name: 'Jessica P.',
+      name: 'Max P.',
       title: 'Recent Graduate',
-      avatar: 'https://placehold.co/48x48.png',
+      avatar: '/images/person3.jpeg',
       hint: 'person smiling',
       text: 'As a student, building a resume was daunting. LaunchPad made it simple and fun. The online hosting is a huge plus for applications.',
     },
@@ -182,10 +182,10 @@ export default function Home() {
               <BeforeAfterSlider
                   before={
                       <Image
-                          src="https://placehold.co/800x600.png"
+                          src="/images/example.png"
                           alt="Before"
-                          width={800}
-                          height={600}
+                          width={804}
+                          height={452}
                           className="w-full h-auto object-cover"
                           data-ai-hint="artistic photo"
                       />
@@ -193,10 +193,10 @@ export default function Home() {
                   after={
                       <div className="relative">
                            <Image
-                              src="https://placehold.co/800x600.png"
+                              src="/images/example.png"
                               alt="After"
-                              width={800}
-                              height={600}
+                              width={804}
+                              height={452}
                               className="w-full h-auto object-cover"
                               data-ai-hint="artistic photo"
                            />

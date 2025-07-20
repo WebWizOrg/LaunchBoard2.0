@@ -137,16 +137,16 @@ const initialSections = [
 const allSectionsMap = new Map(initialSections.map((s) => [s.id, s]));
 
 const templates = [
-  { name: 'Split Showcase', id: 'split-showcase', image: 'https://placehold.co/200x150.png', hint: 'split portfolio' },
-  { name: 'Terminal', id: 'terminal', image: 'https://placehold.co/200x150.png', hint: 'terminal portfolio' },
-  { name: 'Modern Dark', id: 'modern-dark', image: 'https://placehold.co/200x150.png', hint: 'dark portfolio' },
-  { name: 'Zen Slide', id: 'zen-slide', image: 'https://placehold.co/200x150.png', hint: 'horizontal scroll' },
-  { name: 'Magazine Spread', id: 'magazine-spread', image: 'https://placehold.co/200x150.png', hint: 'editorial layout' },
-  { name: 'Minimalist Card Grid', id: 'minimalist-card-grid', image: 'https://placehold.co/200x150.png', hint: 'card grid' },
-  { name: 'Floating Tiles', id: 'floating-tiles', image: 'https://placehold.co/200x150.png', hint: 'interactive tiles' },
-  { name: 'Retro 90s OS', id: 'retro-90s-os', image: 'https://placehold.co/200x150.png', hint: 'retro interface' },
-  { name: 'Dynamic Timeline', id: 'dynamic-timeline', image: 'https://placehold.co/200x150.png', hint: 'timeline resume' },
-  { name: 'Video Hero Intro', id: 'video-hero-intro', image: 'https://placehold.co/200x150.png', hint: 'video background' },
+  { name: 'Split Showcase', id: 'split-showcase', image: '/images/template1.jpg', hint: 'split portfolio' },
+  { name: 'Terminal', id: 'terminal', image: '/images/template2.jpg', hint: 'terminal portfolio' },
+  { name: 'Modern Dark', id: 'modern-dark', image: '/images/template3.jpg', hint: 'dark portfolio' },
+  { name: 'Zen Slide', id: 'zen-slide', image: '/images/template4.jpg', hint: 'horizontal scroll' },
+  { name: 'Magazine Spread', id: 'magazine-spread', image: '/images/template5.jpg', hint: 'editorial layout' },
+  { name: 'Minimalist Card Grid', id: 'minimalist-card-grid', image: '/images/template6.jpg', hint: 'card grid' },
+  { name: 'Floating Tiles', id: 'floating-tiles', image: '/images/template7.jpg', hint: 'interactive tiles' },
+  { name: 'Retro 90s OS', id: 'retro-90s-os', image: '/images/template8.jpg', hint: 'retro interface' },
+  { name: 'Dynamic Timeline', id: 'dynamic-timeline', image: '/images/template9.jpg', hint: 'timeline resume' },
+  { name: 'Video Hero Intro', id: 'video-hero-intro', image: '/images/template10.jpg', hint: 'video background' },
 ];
 
 
