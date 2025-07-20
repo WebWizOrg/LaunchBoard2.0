@@ -1,5 +1,3 @@
-
-
 // src/app/page.tsx
 'use client';
 
@@ -45,7 +43,6 @@ import Autoplay from "embla-carousel-autoplay"
 import TextPressure from '@/TextPressure/TextPressure';
 import ScrambledText from '@/ScrambledText/ScrambledText';
 import ScrollVelocity from '@/ScrollVelocity/ScrollVelocity';
-import CurvedLoop from '@/CurvedLoop/CurvedLoop';
 import ShinyText from '@/ShinyText/ShinyText';
 
 
@@ -113,13 +110,13 @@ export default function Home() {
               Now with AI-Powered Suggestions
             </Badge>
             <div className="mt-6 flex flex-col items-center justify-center space-y-2">
-                <div style={{position: 'relative', height: '150px', width: '100%'}}>
+                <div style={{position: 'relative', height: '200px', width: '100%'}}>
                     <TextPressure text="Verified." flex={true} width={true} weight={true} italic={true} textColor="#4842B3" minFontSize={72} />
                 </div>
-                <div style={{position: 'relative', height: '150px', width: '100%'}}>
+                <div style={{position: 'relative', height: '200px', width: '100%'}}>
                      <TextPressure text="Amplified." flex={true} width={true} weight={true} italic={true} textColor="#4842B3" minFontSize={72} />
                 </div>
-                <div style={{position: 'relative', height: '150px', width: '100%'}}>
+                <div style={{position: 'relative', height: '200px', width: '100%'}}>
                     <TextPressure text="Launched." flex={true} width={true} weight={true} italic={true} textColor="#4842B3" minFontSize={72} />
                 </div>
             </div>
@@ -324,8 +321,6 @@ export default function Home() {
           </div>
         </section>
         
-        <CurvedLoop marqueeText="Launch Your Career ✦ Stand Out From The Crowd ✦" speed={1.5} />
-
         {/* CTA Section */}
         <section className="py-16 md:py-24 bg-secondary/50">
           <div className="container mx-auto px-4 md:px-6">
