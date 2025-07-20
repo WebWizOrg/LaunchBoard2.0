@@ -19,7 +19,7 @@ export type AiResumeDemoInput = z.infer<typeof AiResumeDemoInputSchema>;
 
 const AiResumeDemoOutputSchema = z.object({
   name: z.string().describe('A plausible name for a person with this job title.'),
-  email: z.string().email().describe('A plausible email address.'),
+  email: z.string().describe('A plausible email address.'),
   phone: z.string().describe('A plausible phone number.'),
   address: z.string().describe('A plausible address or city, state.'),
   summary: z.string().describe('A professional summary for the resume, 2-4 sentences long.'),
