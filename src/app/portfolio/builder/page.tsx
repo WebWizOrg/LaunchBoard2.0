@@ -101,6 +101,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import { useTheme } from 'next-themes';
 
 
 // Wrapper to prevent hydration errors
@@ -231,14 +232,43 @@ export const defaultPortfolioData = {
 };
 
 const Watermark = ({ user }: { user: FirebaseUser | null }) => {
+    const { theme } = useTheme();
     if (!user) return null;
+
+    const name = user.displayName || 'Name';
+    const email = user.email || 'email@example.com';
+    const watermarkText = `${name} - ${email}`;
+
+    // Create a dynamic SVG for the watermark pattern
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200">
+            <style>
+                .watermark-text {
+                    font-family: sans-serif;
+                    font-size: 14px;
+                    font-weight: 500;
+                    fill: ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'};
+                    transform: rotate(-30deg);
+                    transform-origin: center;
+                }
+            </style>
+            <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" class="watermark-text">${watermarkText}</text>
+        </svg>
+    `;
+
+    const svgDataUri = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+
     return (
-        <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[8px] p-1 rounded-sm pointer-events-none z-20 opacity-70">
-            <p className="truncate">{user.displayName || user.email}</p>
-            <p className="truncate">{user.email}</p>
-        </div>
+        <div
+            className="absolute inset-0 w-full h-full pointer-events-none z-10"
+            style={{
+                backgroundImage: `url("${svgDataUri}")`,
+                backgroundRepeat: 'repeat',
+            }}
+        ></div>
     );
 };
+
 
 export default function PortfolioBuilderPage() {
   const searchParams = useSearchParams();
