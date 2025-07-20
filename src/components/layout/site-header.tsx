@@ -76,7 +76,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-gray-900 text-gray-50 dark:bg-background/95 dark:text-foreground dark:supports-[backdrop-filter]:bg-background/60 backdrop-blur">
       <div className="container flex h-16 items-center">
         {/* Mobile Nav Trigger */}
         <div className="md:hidden">
@@ -87,13 +87,13 @@ export function SiteHeader() {
                         <span className="sr-only">Toggle Menu</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="left">
+                <SheetContent side="left" className="bg-gray-900 text-gray-50 dark:bg-background dark:text-foreground">
                     <SheetHeader>
                       <SheetTitle className="sr-only">Mobile Navigation</SheetTitle>
                       <SheetDescription className="sr-only">Main navigation links for the site.</SheetDescription>
                     </SheetHeader>
                     <Link href="/" className="flex items-center space-x-2 mb-6">
-                      <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} />
+                      <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} className="dark:invert-0 invert"/>
                     </Link>
                     <nav className="flex flex-col space-y-3">
                         {navLinks.map(link => (
@@ -115,7 +115,7 @@ export function SiteHeader() {
             {/* Left: Logo */}
             <div className="flex-1 flex justify-start">
                 <Link href="/" className="flex items-center space-x-2">
-                    <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} />
+                    <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} className="dark:invert-0 invert"/>
                 </Link>
             </div>
 
@@ -186,7 +186,7 @@ export function SiteHeader() {
         {/* Mobile: Logo centered when nav is open, Auth buttons on the right */}
         <div className="flex flex-1 justify-end items-center md:hidden">
             <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex items-center space-x-2">
-                 <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} />
+                 <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} className="dark:invert-0 invert"/>
             </Link>
             <div className="flex items-center gap-2">
                 {!loading && !user && <ThemeToggle />}
