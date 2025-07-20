@@ -24,10 +24,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       }
     ],
-    // Allow the new logo image
-    dangerouslyAllowSVG: true,
-    contentDispositionType: 'inline',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 };
 

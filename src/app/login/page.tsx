@@ -96,7 +96,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="space-y-1 text-center">
             <Link href="/" className="inline-block mx-auto">
-                <Image src="/logo.png" alt="LaunchPad Logo" width={180} height={48} />
+                <Image src="/images/image[1].png" alt="LaunchPad Logo" width={180} height={48} />
             </Link>
           <CardTitle className="text-2xl font-headline">Welcome Back</CardTitle>
           <CardDescription>

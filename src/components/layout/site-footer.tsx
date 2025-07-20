@@ -19,7 +19,7 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="flex flex-col items-start">
             <Link href="/" className="flex items-center space-x-2 mb-4">
-               <Image src="/logo.png" alt="LaunchPad Logo" width={150} height={40} />
+               <Image src="/images/image[1].png" alt="LaunchPad Logo" width={150} height={40} />
             </Link>
             <p className="text-sm text-muted-foreground">Verified. Amplified. Launched.</p>
           </div>

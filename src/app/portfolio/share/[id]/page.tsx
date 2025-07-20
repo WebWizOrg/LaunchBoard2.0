@@ -18,7 +18,7 @@ export default function SharePortfolioPage({ params }: { params: { id: string } 
           <Button asChild variant="ghost" className="text-muted-foreground hover:text-foreground">
              <Link href="/" className="flex items-center gap-2">
                 <p className="text-xs">Powered by</p>
-                <Image src="/logo.png" alt="LaunchPad Logo" width={100} height={26} />
+                <Image src="/images/image[1].png" alt="LaunchPad Logo" width={100} height={26} />
             </Link>
           </Button>
        </div>
