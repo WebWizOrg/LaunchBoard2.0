@@ -52,16 +52,16 @@ export default function Home() {
   };
 
   const templates = [
-    { name: 'Horizontal Split', id: 'horizontal-split', image: 'https://placehold.co/400x566.png', hint: 'resume template' },
-    { name: 'Vertical Split', id: 'vertical-split', image: 'https://placehold.co/400x566.png', hint: 'modern resume' },
-    { name: 'Classic', id: 'classic', image: 'https://placehold.co/400x566.png', hint: 'classic resume' },
-    { name: 'ATS-Friendly', id: 'ats-friendly', image: 'https://placehold.co/400x566.png', hint: 'ATS resume' },
-    { name: 'Creative', id: 'creative', image: 'https://placehold.co/400x566.png', hint: 'creative resume' },
-    { name: 'Student', id: 'student', image: 'https://placehold.co/400x566.png', hint: 'student resume' },
-    { name: 'Developer', id: 'developer', image: 'https://placehold.co/400x566.png', hint: 'developer resume' },
-    { name: 'Minimal CV', id: 'minimal-cv', image: 'https://placehold.co/400x566.png', hint: 'minimal cv' },
-    { name: 'Two-Column Balanced', id: 'two-column-balanced', image: 'https://placehold.co/400x566.png', hint: 'two column resume' },
-    { name: 'Showcase First', id: 'showcase-first', image: 'https://placehold.co/400x566.png', hint: 'portfolio resume' },
+    { name: 'Horizontal Split', id: 'horizontal-split', image: '/images/resume(1).png', hint: 'resume template' },
+    { name: 'Vertical Split', id: 'vertical-split', image: '/images/resume(2).png', hint: 'modern resume' },
+    { name: 'Classic', id: 'classic', image: '/images/resume(3).png', hint: 'classic resume' },
+    { name: 'ATS-Friendly', id: 'ats-friendly', image: '/images/resume(4).png', hint: 'ATS resume' },
+    { name: 'Creative', id: 'creative', image: '/images/resume(5).png', hint: 'creative resume' },
+    { name: 'Student', id: 'student', image: '/images/resume(6).png', hint: 'student resume' },
+    { name: 'Developer', id: 'developer', image: '/images/resume(7).png', hint: 'developer resume' },
+    { name: 'Minimal CV', id: 'minimal-cv', image: '/images/resume(8).png', hint: 'minimal cv' },
+    { name: 'Two-Column Balanced', id: 'two-column-balanced', image: '/images/resume(9).png', hint: 'two column resume' },
+    { name: 'Showcase First', id: 'showcase-first', image: '/images/resume(10).png', hint: 'portfolio resume' },
   ];
 
   const testimonials = [
