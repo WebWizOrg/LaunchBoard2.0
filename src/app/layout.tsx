@@ -62,7 +62,7 @@ const playfairDisplay = Playfair_Display({
 
 
 export const metadata: Metadata = {
-  title: 'LAUNCHPAD',
+  title: 'LaunchPad',
   description: 'Verified. Amplified. Launched.',
 };
 
