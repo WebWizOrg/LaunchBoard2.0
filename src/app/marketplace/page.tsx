@@ -56,7 +56,7 @@ export default function MarketplacePage() {
         <div className="relative flex flex-col items-center justify-center min-h-screen bg-background overflow-hidden">
              <div className="absolute inset-0 -z-10 h-full w-full bg-background bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
             <h1 className="text-4xl md:text-6xl font-bold font-headline my-12 text-center">Template Marketplace</h1>
-            <div className="w-full h-[70vh] flex justify-center items-center perspective-1000">
+            <div className="w-full h-[70vh] perspective-1000">
                 <InfiniteScroll
                     items={items}
                     isTilted={true}
@@ -67,6 +67,7 @@ export default function MarketplacePage() {
                     pauseOnHover={true}
                     itemMinHeight={400}
                     width="25rem"
+                    maxHeight='100%'
                 />
             </div>
         </div>

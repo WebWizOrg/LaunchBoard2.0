@@ -113,14 +113,14 @@ export default function Home() {
               Now with AI-Powered Suggestions
             </Badge>
             <div className="mt-6 flex flex-col items-center justify-center space-y-2">
-                <div style={{position: 'relative', height: '100px', width: '100%'}}>
-                    <TextPressure text="Verified." flex={true} width={true} weight={true} italic={true} textColor="#ffffff" minFontSize={72} />
+                <div style={{position: 'relative', height: '150px', width: '100%'}}>
+                    <TextPressure text="Verified." flex={true} width={true} weight={true} italic={true} textColor="#4842B3" minFontSize={72} />
                 </div>
-                <div style={{position: 'relative', height: '100px', width: '100%'}}>
-                     <TextPressure text="Amplified." flex={true} width={true} weight={true} italic={true} textColor="#ffffff" minFontSize={72} />
+                <div style={{position: 'relative', height: '150px', width: '100%'}}>
+                     <TextPressure text="Amplified." flex={true} width={true} weight={true} italic={true} textColor="#4842B3" minFontSize={72} />
                 </div>
-                <div style={{position: 'relative', height: '100px', width: '100%'}}>
-                    <TextPressure text="Launched." flex={true} width={true} weight={true} italic={true} textColor="#ffffff" minFontSize={72} />
+                <div style={{position: 'relative', height: '150px', width: '100%'}}>
+                    <TextPressure text="Launched." flex={true} width={true} weight={true} italic={true} textColor="#4842B3" minFontSize={72} />
                 </div>
             </div>
             <p className="max-w-2xl mx-auto mt-4 text-lg md:text-xl text-muted-foreground">
