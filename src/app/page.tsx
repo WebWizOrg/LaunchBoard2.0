@@ -45,6 +45,7 @@ import TextPressure from '@/TextPressure/TextPressure';
 import ScrambledText from '@/ScrambledText/ScrambledText';
 import ScrollVelocity from '@/ScrollVelocity/ScrollVelocity';
 import ShinyText from '@/ShinyText/ShinyText';
+import Particles from '@/Particles/Particles';
 
 
 export default function Home() {
@@ -105,16 +106,27 @@ export default function Home() {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="relative w-full py-20 md:py-32 lg:py-40 bg-background overflow-hidden">
+          <Particles
+            className="absolute top-0 left-0 w-full h-full -z-10"
+            particleColors={['#ffffff', '#ffffff']}
+            particleCount={100}
+            particleSpread={10}
+            speed={0.1}
+            particleBaseSize={100}
+            moveParticlesOnHover={false}
+            alphaParticles={true}
+            disableRotation={false}
+          />
           <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.05] [mask-image:radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(255,255,255,0.7),rgba(255,255,255,0))]"></div>
           <div className="container mx-auto px-4 md:px-6 text-center relative z-10">
             <div className="mt-6 flex flex-col items-center justify-center space-y-2">
-                <div style={{position: 'relative', height: '200px', width: '100%'}}>
+                <div style={{position: 'relative', width: '100%'}}>
                     <TextPressure text="Verified." flex={true} width={true} weight={true} italic={true} textColor="#4842B3" minFontSize={72} />
                 </div>
-                <div style={{position: 'relative', height: '200px', width: '100%'}}>
+                <div style={{position: 'relative', width: '100%'}}>
                      <TextPressure text="Amplified." flex={true} width={true} weight={true} italic={true} textColor="#4842B3" minFontSize={72} />
                 </div>
-                <div style={{position: 'relative', height: '200px', width: '100%'}}>
+                <div style={{position: 'relative', width: '100%'}}>
                     <TextPressure text="Launched." flex={true} width={true} weight={true} italic={true} textColor="#4842B3" minFontSize={72} />
                 </div>
             </div>
@@ -181,6 +193,9 @@ export default function Home() {
           <div className="container mx-auto px-4 md:px-6 text-center">
                 <ScrambledText
                     className="!m-0 !max-w-full text-3xl md:text-4xl !text-foreground font-bold font-headline"
+                    radius={100}
+                    duration={1.2}
+                    speed={0.5}
                     scrambleChars=".:"
                 >
                     Protect Your Work
