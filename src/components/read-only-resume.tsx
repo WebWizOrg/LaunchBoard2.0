@@ -1,3 +1,4 @@
+
 // src/components/read-only-resume.tsx
 'use client';
 
@@ -41,12 +42,14 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 // This component fetches and renders the actual resume content
-export function ReadOnlyResume({ resumeId }: { resumeId: string }) {
-  const [resumeData, setResumeData] = useState<DocumentData | null>(null);
-  const [loading, setLoading] = useState(true);
+export function ReadOnlyResume({ resumeId, resumeData: initialData }: { resumeId?: string, resumeData?: DocumentData }) {
+  const [resumeData, setResumeData] = useState<DocumentData | null>(initialData || null);
+  const [loading, setLoading] = useState(!initialData);
   const { theme } = useTheme();
 
   useEffect(() => {
+    if (initialData) return; // Don't fetch if data is provided directly
+
     if (!resumeId) {
       setLoading(false);
       return;
@@ -86,7 +89,7 @@ export function ReadOnlyResume({ resumeId }: { resumeId: string }) {
       }
     };
     fetchResume();
-  }, [resumeId]);
+  }, [resumeId, initialData]);
 
   const renderSectionComponent = (section: any, templateContext: any = {}) => {
         const content = resumeData?.content[section.id] || {};
@@ -284,6 +287,47 @@ export function ReadOnlyResume({ resumeId }: { resumeId: string }) {
             </div>
           );
     }
+     if (templateId === 'vertical-split') {
+            const headerSection = sections.find(s => s.type === 'header');
+            const headerContent = headerSection ? resumeDataToRender.content[headerSection.id] : {};
+
+            const leftSections = ['summary', 'contact', 'links', 'skills', 'languages', 'certifications'];
+            const rightSections = ['experience', 'education', 'projects', 'publications', 'achievements', 'recommendations'];
+            
+            const leftContent = sections.filter(s => leftSections.includes(s.type));
+            const rightContent = sections.filter(s => rightSections.includes(s.type));
+
+            return (
+                <div className='flex flex-col h-full'>
+                    <div className="h-[15%] p-6 flex flex-row items-center justify-center gap-6" style={{ backgroundColor: 'var(--resume-accent-color)', color: 'var(--resume-accent-text-color)' }}>
+                         {headerContent.showAvatar && (
+                            <div className="relative group w-36 h-36 flex-shrink-0">
+                                <Image
+                                    src={headerContent.avatar || 'https://placehold.co/144x144.png'}
+                                    alt="Avatar"
+                                    width={144}
+                                    height={144}
+                                    data-ai-hint="placeholder"
+                                    className="rounded-full object-cover w-36 h-36 border-4 border-current"
+                                />
+                            </div>
+                        )}
+                        <div className="flex-grow flex flex-col justify-center">
+                            <h1 className="text-5xl font-bold text-left" style={{fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: 'var(--resume-accent-text-color)'}}>{headerContent.name}</h1>
+                            <p className="text-2xl opacity-80 text-left mt-2" style={{color: 'var(--resume-accent-text-color)'}}>{headerContent.tagline}</p>
+                        </div>
+                    </div>
+                    <div className="h-[85%] flex bg-muted/30">
+                        <div className="w-[30%] p-6">
+                            {leftContent.map((section) => <div key={section.id}>{renderSectionComponent(section, { isAccentBg: false })}</div> )}
+                        </div>
+                        <div className="w-[70%] p-6 bg-background">
+                            {rightContent.map((section) => <div key={section.id}>{renderSectionComponent(section, { isAccentBg: false })}</div>)}
+                        </div>
+                    </div>
+                </div>
+            )
+        }
     
     // Default/Fallback template renderer
     return (
@@ -306,7 +350,10 @@ export function ReadOnlyResume({ resumeId }: { resumeId: string }) {
   }
 
   if (!resumeData) {
-    return notFound();
+    if (resumeId) { // Only call notFound if we were expecting to fetch data
+      return notFound();
+    }
+    return null; // Don't render anything if no data was passed and no ID was provided
   }
 
   const styling = resumeData.styling || {};

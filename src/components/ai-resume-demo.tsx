@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -5,6 +6,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { generateAiResumeDemo } from '@/ai/flows/ai-resume-demo';
+import { ReadOnlyResume } from '@/components/read-only-resume';
+import { DocumentData } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +20,7 @@ const formSchema = z.object({
   jobTitle: z.string().min(2, 'Job title must be at least 2 characters.'),
 });
 
-function Typewriter({ text }: { text: string }) {
+function Typewriter({ text, onComplete }: { text: string; onComplete: () => void }) {
   const [displayText, setDisplayText] = useState('');
 
   useEffect(() => {
@@ -29,10 +32,11 @@ function Typewriter({ text }: { text: string }) {
         i++;
       } else {
         clearInterval(intervalId);
+        onComplete();
       }
     }, 10);
     return () => clearInterval(intervalId);
-  }, [text]);
+  }, [text, onComplete]);
 
   return <p className="whitespace-pre-wrap font-mono text-sm">{displayText}</p>;
 }
@@ -40,7 +44,7 @@ function Typewriter({ text }: { text: string }) {
 
 export function AiResumeDemo() {
   const [isPending, startTransition] = useTransition();
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<DocumentData | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -55,7 +59,34 @@ export function AiResumeDemo() {
     startTransition(async () => {
       try {
         const response = await generateAiResumeDemo({ jobTitle: values.jobTitle });
-        setResult(response.resume);
+        
+        // This is a mock structure that matches what ReadOnlyResume expects
+        const demoResumeData = {
+            name: response.name,
+            isPublished: true,
+            sections: [
+                {id: 'header_1', type: 'header'},
+                {id: 'summary_1', type: 'summary'},
+                {id: 'experience_1', type: 'experience'},
+                {id: 'skills_1', type: 'skills'}
+            ],
+            content: {
+                header_1: { name: response.name, tagline: values.jobTitle, showAvatar: true, avatar: '' },
+                summary_1: { title: 'Summary', text: response.summary },
+                experience_1: { title: 'Experience', items: response.experience },
+                skills_1: { title: 'Skills', text: response.skills.join(', ') },
+            },
+            styling: {
+                template: 'vertical-split', // Use a specific template
+                accentColor: '#4842B3',
+                accentTextColor: '#ffffff',
+                backgroundColorLight: '#ffffff',
+                backgroundColorDark: '#1a202c',
+                fontFamily: 'var(--font-inter)',
+            }
+        };
+        setResult(demoResumeData);
+
       } catch (error) {
         console.error('Error generating AI resume demo:', error);
         toast({
@@ -98,21 +129,19 @@ export function AiResumeDemo() {
             </Button>
           </form>
         </Form>
-        {(isPending || result) && (
-          <div className="mt-6">
+        <div className="mt-6">
             <Card className="bg-background/70">
-              <CardContent className="p-6">
+              <CardContent className="p-0">
                 {isPending && (
-                  <div className="flex items-center text-muted-foreground">
+                  <div className="flex items-center text-muted-foreground p-6">
                     <Bot className="mr-2 h-5 w-5 animate-pulse" />
                     Generating your sample resume...
                   </div>
                 )}
-                {result && <Typewriter text={result} />}
+                {result && <ReadOnlyResume resumeData={result} />}
               </CardContent>
             </Card>
           </div>
-        )}
       </CardContent>
     </Card>
   );

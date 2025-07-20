@@ -224,7 +224,7 @@ export default function Home() {
               >
                 <CarouselContent className="-ml-4">
                   {templates.map((template, index) => (
-                    <CarouselItem key={index} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                    <CarouselItem key={index} className="pl-4 basis-full md:basis-1/2 lg:basis-1/3">
                       <div className="p-1">
                         <Card className="overflow-hidden group w-full h-auto">
                             <CardContent className="p-0">
