@@ -333,6 +333,17 @@ export default function BuilderPage() {
   
   const [resumeData, setResumeData] = useState<DocumentData | null>(null);
 
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useTransition();
+  const [suggestionDialogOpen, setSuggestionDialogOpen] = useState(false);
+  const [currentRewriteTarget, setCurrentRewriteTarget] = useState<{
+    sectionId: string;
+    field: string;
+    itemIndex?: number;
+    text: string;
+  } | null>(null);
+
+
   // Debounced save function
   const debouncedSave = useCallback(
     debounce((dataToSave) => {
@@ -410,17 +421,78 @@ export default function BuilderPage() {
 
   const { theme } = useTheme();
 
-  const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
-  const [textToRewrite, setTextToRewrite] = useState('');
-  const [isPending, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
   const resumeSectionsIds = resumeData?.sections.map(s => s.id) || [];
   const styling = resumeData?.styling || defaultResumeData.styling;
 
+  const handleGetSuggestions = (sectionId, field, text, itemIndex = undefined) => {
+    if (!text.trim()) {
+      toast({
+        title: 'Text is empty',
+        description: 'Please enter some text to get suggestions.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setCurrentRewriteTarget({ sectionId, field, itemIndex, text });
+    setAiSuggestions([]);
+    setSuggestionDialogOpen(true);
+
+    setIsGeneratingSuggestions(async () => {
+      try {
+        const headerSection = resumeData.sections.find(s => s.type === 'header');
+        const jobTitle = headerSection ? resumeData.content[headerSection.id]?.tagline : undefined;
+
+        const response = await rewriteResumeText({
+          textToRewrite: text,
+          jobTitle,
+        });
+        setAiSuggestions(response.suggestions);
+      } catch (error) {
+        console.error('Error getting AI suggestions:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to get AI suggestions. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    });
+  };
   
+  const handleApplySuggestion = (suggestion: string) => {
+    if (!currentRewriteTarget) return;
+    const { sectionId, field, itemIndex } = currentRewriteTarget;
+
+    if (itemIndex !== undefined) {
+      handleListItemChange(sectionId, itemIndex, field, suggestion);
+    } else {
+      handleContentChange(sectionId, field, suggestion);
+    }
+    setSuggestionDialogOpen(false);
+    setCurrentRewriteTarget(null);
+  };
+  
+  const AiEnhanceButton = ({ sectionId, field, text, itemIndex = undefined }) => (
+    <Tooltip>
+        <TooltipTrigger asChild>
+             <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute top-0 right-0 h-7 w-7 opacity-0 group-hover/editable:opacity-100"
+                onClick={() => handleGetSuggestions(sectionId, field, text, itemIndex)}
+              >
+                <Sparkles className="h-4 w-4 text-primary" />
+              </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+            <p>Enhance with AI</p>
+        </TooltipContent>
+    </Tooltip>
+  );
+
 
   const updateResumeData = (updater) => {
     setResumeData(prev => {
@@ -672,38 +744,6 @@ export default function BuilderPage() {
     });
   };
 
-  const handleGetSuggestions = () => {
-    if (!textToRewrite.trim()) {
-      toast({
-        title: 'Text is empty',
-        description: 'Please enter some text to get suggestions.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    startTransition(async () => {
-      setAiSuggestions([]);
-      try {
-        const headerSection = resumeData.sections.find(s => s.type === 'header');
-        const jobTitle = headerSection ? resumeData.content[headerSection.id]?.tagline : undefined;
-
-        const response = await rewriteResumeText({
-          textToRewrite: textToRewrite,
-          jobTitle,
-        });
-        setAiSuggestions(response.suggestions);
-      } catch (error) {
-        console.error('Error getting AI suggestions:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to get AI suggestions. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    });
-  };
-
    const exportAsPDF = () => {
     const resumeElement = document.getElementById('resume-preview');
     if (resumeElement) {
@@ -757,12 +797,14 @@ export default function BuilderPage() {
                     {!isEditable ? (
                         <div className={cn("text-xl font-bold w-full", titleClass, className)}>{value}</div>
                     ) : (
-                        <Input 
-                            value={value || ''} 
-                            onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} 
-                            className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", titleClass, className)} 
-                            style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }}
-                        />
+                        <div className="relative group/editable w-full">
+                          <Input 
+                              value={value || ''} 
+                              onChange={(e) => handleContentChange(section.id, 'title', e.target.value)} 
+                              className={cn("text-xl font-bold h-auto p-0 border-0 focus-visible:ring-0 bg-transparent w-full", titleClass, className)} 
+                              style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))', color: isAccentBg ? 'var(--resume-accent-text-color)' : 'var(--resume-accent-color)' }}
+                          />
+                        </div>
                     )}
                 </div>
             )
@@ -802,17 +844,23 @@ export default function BuilderPage() {
                         </>
                     ) : (
                         <>
-                          <Input
-                            value={content.name || ''}
-                            onChange={(e) => handleContentChange(section.id, 'name', e.target.value)}
-                            className="text-4xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent"
-                            style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}
-                          />
-                          <Input
-                            value={content.tagline || ''}
-                            onChange={(e) => handleContentChange(section.id, 'tagline', e.target.value)}
-                            className="text-muted-foreground p-0 border-0 h-auto text-center focus-visible:ring-0 bg-transparent"
-                          />
+                          <div className="relative group/editable w-full">
+                            <Input
+                              value={content.name || ''}
+                              onChange={(e) => handleContentChange(section.id, 'name', e.target.value)}
+                              className="text-4xl font-bold h-auto p-0 border-0 text-center focus-visible:ring-0 bg-transparent"
+                              style={{ fontFamily: 'var(--resume-font-headline, var(--font-headline))' }}
+                            />
+                            <AiEnhanceButton sectionId={section.id} field="name" text={content.name} />
+                          </div>
+                          <div className="relative group/editable w-full">
+                            <Input
+                              value={content.tagline || ''}
+                              onChange={(e) => handleContentChange(section.id, 'tagline', e.target.value)}
+                              className="text-muted-foreground p-0 border-0 h-auto text-center focus-visible:ring-0 bg-transparent"
+                            />
+                            <AiEnhanceButton sectionId={section.id} field="tagline" text={content.tagline} />
+                          </div>
                         </>
                     )}
 
@@ -889,7 +937,12 @@ export default function BuilderPage() {
               return (
                   <div className="mt-6">
                       <TitleComponent value={content.title || ''} icon={section.type === 'summary' ? FileText : Bot} titleClass={templateContext.titleClass} />
-                      {!isEditable ? <p className="whitespace-pre-wrap text-sm">{content.text}</p> : <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />}
+                      {!isEditable ? <p className="whitespace-pre-wrap text-sm">{content.text}</p> : 
+                      <div className="relative group/editable">
+                          <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
+                          <AiEnhanceButton sectionId={section.id} field="text" text={content.text} />
+                      </div>
+                      }
                   </div>
               );
           case 'recommendations':
@@ -900,8 +953,15 @@ export default function BuilderPage() {
                          {(content.items || []).map((item, index) => (
                              <div key={item.id} className="relative group/item pl-4 border-l-2 border-border/50">
                                  {isEditable && <button onClick={() => removeListItem(section.id, index)} className="absolute top-0 -right-2 h-5 w-5 bg-background border rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover/item:opacity-100 transition-opacity z-10"><X className="h-3 w-3" /></button>}
-                                 {!isEditable ? <blockquote className="text-sm italic">"{item.text}"</blockquote> : <Textarea placeholder="Recommendation text..." value={item.text || ''} onChange={(e) => handleListItemChange(section.id, index, 'text', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0 italic" />}
-                                 {!isEditable ? <cite className="block text-right font-semibold not-italic mt-2">&mdash; {item.author}</cite> : <Input placeholder="Author Name, Title @ Company" value={item.author || ''} onChange={(e) => handleListItemChange(section.id, index, 'author', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-right font-semibold" />}
+                                 
+                                 <div className="relative group/editable">
+                                     {!isEditable ? <blockquote className="text-sm italic">"{item.text}"</blockquote> : <Textarea placeholder="Recommendation text..." value={item.text || ''} onChange={(e) => handleListItemChange(section.id, index, 'text', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0 italic" />}
+                                     {isEditable && <AiEnhanceButton sectionId={section.id} field="text" text={item.text} itemIndex={index} />}
+                                 </div>
+                                 <div className="relative group/editable mt-2">
+                                     {!isEditable ? <cite className="block text-right font-semibold not-italic mt-2">&mdash; {item.author}</cite> : <Input placeholder="Author Name, Title @ Company" value={item.author || ''} onChange={(e) => handleListItemChange(section.id, index, 'author', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-right font-semibold" />}
+                                     {isEditable && <AiEnhanceButton sectionId={section.id} field="author" text={item.author} itemIndex={index} />}
+                                 </div>
                              </div>
                          ))}
                          {isEditable && <Button variant="outline" size="sm" className="mt-2" onClick={() => addListItem(section.id, 'recommendations')}>
@@ -951,33 +1011,33 @@ export default function BuilderPage() {
                                         </>}
                                         {section.type === 'links' && <a href={item.url} target="_blank" rel="noreferrer" className="font-semibold underline">{item.text}</a>}
                                         <p className="text-sm text-muted-foreground">{item.dates || item.date}</p>
-                                        {['experience', 'projects', 'education'].includes(section.type) && <p className="whitespace-pre-wrap text-sm mt-1">{item.description}</p>}
+                                        {['experience', 'projects', 'education'].includes(section.type) && item.description && <p className="whitespace-pre-wrap text-sm mt-1">{item.description}</p>}
                                     </>
                                  ) : (
                                     <>
                                      {section.type === 'education' && (
-                                         <>
+                                         <div className="space-y-1">
                                              <Input placeholder="Institution Name" value={item.institution || ''} onChange={(e) => handleListItemChange(section.id, index, 'institution', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                              <Input placeholder="Degree or Field of Study" value={item.degree || ''} onChange={(e) => handleListItemChange(section.id, index, 'degree', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                                         </>
+                                         </div>
                                      )}
                                      {section.type === 'experience' && (
-                                         <>
+                                         <div className="space-y-1">
                                              <Input placeholder="Company Name" value={item.company || ''} onChange={(e) => handleListItemChange(section.id, index, 'company', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                                             <Input placeholder="Your Role" value={item.role || ''} onChange={(e) => handleListItemChange(section.id, index, 'role', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                                         </>
+                                             <div className="relative group/editable"><Input placeholder="Your Role" value={item.role || ''} onChange={(e) => handleListItemChange(section.id, index, 'role', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" /><AiEnhanceButton sectionId={section.id} field="role" text={item.role} itemIndex={index}/></div>
+                                         </div>
                                      )}
                                      {section.type === 'projects' && (
-                                          <>
+                                          <div className="space-y-1">
                                              <Input placeholder="Project Name" value={item.name || ''} onChange={(e) => handleListItemChange(section.id, index, 'name', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                              <Input placeholder="Tech Stack" value={item.tech || ''} onChange={(e) => handleListItemChange(section.id, index, 'tech', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 text-sm text-muted-foreground" />
-                                         </>
+                                         </div>
                                      )}
                                       {section.type === 'certifications' && (
-                                         <>
+                                         <div className="space-y-1">
                                              <Input placeholder="Certification Name" value={item.name || ''} onChange={(e) => handleListItemChange(section.id, index, 'name', e.target.value)} className="font-semibold border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                              <Input placeholder="Issuing Organization" value={item.issuer || ''} onChange={(e) => handleListItemChange(section.id, index, 'issuer', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                                         </>
+                                         </div>
                                      )}
                                      {section.type === 'links' && (
                                          <div className="flex items-center gap-2">
@@ -985,8 +1045,13 @@ export default function BuilderPage() {
                                             <Input placeholder="URL" value={item.url || ''} onChange={(e) => handleListItemChange(section.id, index, 'url', e.target.value)} className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
                                          </div>
                                      )}
-                                     <Input placeholder="Dates (e.g., 2020 - 2024)" value={item.dates || item.date || ''} onChange={(e) => handleListItemChange(section.id, index, section.type === 'certifications' ? 'date' : 'dates', e.target.value)} className="text-sm text-muted-foreground border-0 p-0 h-auto bg-transparent focus-visible:ring-0" />
-                                     {['experience', 'projects', 'education'].includes(section.type) && <Textarea placeholder="Description or key achievements..." value={item.description || ''} onChange={(e) => handleListItemChange(section.id, index, 'description', e.target.value)} className="text-sm mt-1 bg-transparent border-0 focus-visible:ring-0 p-0" />}
+                                     <Input placeholder="Dates (e.g., 2020 - 2024)" value={item.dates || item.date || ''} onChange={(e) => handleListItemChange(section.id, index, section.type === 'certifications' ? 'date' : 'dates', e.target.value)} className="text-sm text-muted-foreground border-0 p-0 h-auto bg-transparent focus-visible:ring-0 mt-1" />
+                                     {['experience', 'projects', 'education'].includes(section.type) && 
+                                     <div className="relative group/editable mt-1">
+                                        <Textarea placeholder="Description or key achievements..." value={item.description || ''} onChange={(e) => handleListItemChange(section.id, index, 'description', e.target.value)} className="text-sm bg-transparent border-0 focus-visible:ring-0 p-0" />
+                                        <AiEnhanceButton sectionId={section.id} field="description" text={item.description} itemIndex={index}/>
+                                     </div>
+                                     }
                                      </>
                                  )}
                              </div>
@@ -1030,7 +1095,10 @@ export default function BuilderPage() {
                  ) : !isEditable ? (
                     <p className="text-sm">{content.text}</p>
                  ) : (
-                    <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`e.g., Python, JavaScript, Public Speaking...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
+                    <div className="relative group/editable">
+                        <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`e.g., Python, JavaScript, Public Speaking...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
+                        <AiEnhanceButton sectionId={section.id} field="text" text={content.text} />
+                    </div>
                  )}
               </div>
             );
@@ -1049,7 +1117,12 @@ export default function BuilderPage() {
                     icon={textIconMap[section.type]}
                     titleClass={templateContext.titleClass}
                 />
-                {!isEditable ? <p className="whitespace-pre-wrap text-sm">{content.text}</p> : <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />}
+                {!isEditable ? <p className="whitespace-pre-wrap text-sm">{content.text}</p> : 
+                    <div className="relative group/editable">
+                        <Textarea value={content.text || ''} onChange={(e) => handleContentChange(section.id, 'text', e.target.value)} placeholder={`Content for ${content.title}...`} className="bg-transparent border-0 focus-visible:ring-0 p-0" />
+                        <AiEnhanceButton sectionId={section.id} field="text" text={content.text} />
+                    </div>
+                }
               </div>
             );
             case 'image':
@@ -1087,12 +1160,15 @@ export default function BuilderPage() {
                         {!isEditable ? (
                             <h3 className="text-lg font-semibold">{content.text}</h3>
                         ) : (
-                            <Input 
-                                value={content.text || ''}
-                                onChange={(e) => handleContentChange(section.id, 'text', e.target.value)}
-                                placeholder="Subtitle"
-                                className="text-lg font-semibold p-0 border-0 h-auto focus-visible:ring-0 bg-transparent"
-                            />
+                            <div className="relative group/editable">
+                              <Input 
+                                  value={content.text || ''}
+                                  onChange={(e) => handleContentChange(section.id, 'text', e.target.value)}
+                                  placeholder="Subtitle"
+                                  className="text-lg font-semibold p-0 border-0 h-auto focus-visible:ring-0 bg-transparent"
+                              />
+                               <AiEnhanceButton sectionId={section.id} field="text" text={content.text} />
+                            </div>
                         )}
                     </div>
                 );
@@ -1792,14 +1868,6 @@ export default function BuilderPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                         <Button variant="ghost" size="icon" onClick={() => setIsAiPanelOpen(true)}>
-                            <Bot className="h-5 w-5" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>AI Suggestions</p></TooltipContent>
-                </Tooltip>
                  <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant={isPreviewing ? "secondary" : "ghost"} size="icon" onClick={() => setIsPreviewing(!isPreviewing)}> <Eye className="h-5 w-5" /> </Button>
@@ -1891,63 +1959,36 @@ export default function BuilderPage() {
             ) : null}
           </DragOverlay>
 
-          {/* AI Sidebar */}
-          <aside className={cn("border-l bg-background transition-all duration-300 ease-in-out", isAiPanelOpen ? "w-80" : "w-0")}>
-            <div className={cn("h-full transition-all flex flex-col", isAiPanelOpen ? 'opacity-100 p-4' : 'opacity-0 p-0 overflow-hidden')}>
-                <Card className="flex-1 flex flex-col">
-                <CardHeader>
-                    <CardTitle className="flex items-center justify-between text-lg">
-                    <div className="flex items-center gap-2">
-                        <Bot className="h-6 w-6 text-primary" />
-                        AI Suggestions
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={() => setIsAiPanelOpen(false)}>
-                        <PanelRightClose />
-                    </Button>
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="ai-rewrite-input">Text to improve</Label>
-                      <Textarea 
-                        id="ai-rewrite-input"
-                        placeholder="Paste a bullet point or paragraph from your resume here..."
-                        value={textToRewrite}
-                        onChange={(e) => setTextToRewrite(e.target.value)}
-                        rows={5}
-                      />
-                    </div>
-                    <Button className="w-full mt-auto" onClick={handleGetSuggestions} disabled={isPending}>
-                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                        Rewrite
-                    </Button>
-                     {aiSuggestions.length > 0 && (
-                        <Separator />
-                     )}
-                     <ScrollArea className="flex-1">
-                        <div className="space-y-4">
-                          {aiSuggestions.map((suggestion, index) => (
-                            <div key={index} className="text-sm p-3 border rounded-lg bg-muted/50 relative group">
-                              <p>{suggestion}</p>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(suggestion);
-                                  toast({ title: "Copied to clipboard!"});
-                                }}
-                              >
-                                <Copy className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
+          <Dialog open={suggestionDialogOpen} onOpenChange={setSuggestionDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>AI Suggestions</DialogTitle>
+                    <DialogDescription>
+                        Here are a few suggestions to improve your text. Click one to use it.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    {isGeneratingSuggestions && (
+                        <div className="flex items-center justify-center h-24">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
-                     </ScrollArea>
-                </CardContent>
-                </Card>
-            </div>
-          </aside>
+                    )}
+                    <ScrollArea className="max-h-80">
+                      <div className="space-y-2">
+                        {aiSuggestions.map((suggestion, index) => (
+                           <Card key={index} className="p-3 bg-muted/50">
+                             <p className="text-sm">{suggestion}</p>
+                             <div className="text-right mt-2">
+                                <Button size="sm" variant="ghost" onClick={() => handleApplySuggestion(suggestion)}>Replace</Button>
+                             </div>
+                           </Card>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                </div>
+            </DialogContent>
+          </Dialog>
+
         </div>
       </TooltipProvider>
     </DndContext>

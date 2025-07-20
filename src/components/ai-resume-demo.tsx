@@ -66,15 +66,25 @@ export function AiResumeDemo() {
             isPublished: true,
             sections: [
                 {id: 'header_1', type: 'header'},
+                {id: 'contact_1', type: 'contact'},
                 {id: 'summary_1', type: 'summary'},
                 {id: 'experience_1', type: 'experience'},
-                {id: 'skills_1', type: 'skills'}
+                {id: 'education_1', type: 'education'},
+                {id: 'skills_1', type: 'skills'},
+                {id: 'languages_1', type: 'languages'},
+                {id: 'certifications_1', type: 'certifications'},
+                {id: 'publications_1', type: 'publications'},
             ],
             content: {
                 header_1: { name: response.name, tagline: values.jobTitle, showAvatar: true, avatar: '' },
+                contact_1: { title: 'Contact', email: response.email, phone: response.phone, address: response.address },
                 summary_1: { title: 'Summary', text: response.summary },
                 experience_1: { title: 'Experience', items: response.experience },
+                education_1: { title: 'Education', items: response.education },
                 skills_1: { title: 'Skills', text: response.skills.join(', ') },
+                languages_1: { title: 'Languages', text: response.languages },
+                certifications_1: { title: 'Certifications', items: response.certifications },
+                publications_1: { title: 'Publications', text: response.publications },
             },
             styling: {
                 template: 'vertical-split', // Use a specific template
@@ -130,12 +140,12 @@ export function AiResumeDemo() {
           </form>
         </Form>
         <div className="mt-6">
-            <Card className="bg-background/70">
+            <Card className="bg-background/70 min-h-[400px]">
               <CardContent className="p-0">
                 {isPending && (
-                  <div className="flex items-center text-muted-foreground p-6">
-                    <Bot className="mr-2 h-5 w-5 animate-pulse" />
-                    Generating your sample resume...
+                  <div className="flex h-full min-h-[400px] items-center justify-center text-muted-foreground p-6">
+                    <Bot className="mr-4 h-8 w-8 animate-pulse" />
+                    <div className="text-lg">Generating your sample resume...</div>
                   </div>
                 )}
                 {result && <ReadOnlyResume resumeData={result} />}

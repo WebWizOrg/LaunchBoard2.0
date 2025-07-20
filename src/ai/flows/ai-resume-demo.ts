@@ -19,6 +19,9 @@ export type AiResumeDemoInput = z.infer<typeof AiResumeDemoInputSchema>;
 
 const AiResumeDemoOutputSchema = z.object({
   name: z.string().describe('A plausible name for a person with this job title.'),
+  email: z.string().email().describe('A plausible email address.'),
+  phone: z.string().describe('A plausible phone number.'),
+  address: z.string().describe('A plausible address or city, state.'),
   summary: z.string().describe('A professional summary for the resume, 2-4 sentences long.'),
   experience: z.array(z.object({
     id: z.string().describe('A unique ID for the experience item.'),
@@ -27,7 +30,22 @@ const AiResumeDemoOutputSchema = z.object({
     dates: z.string().describe('Plausible dates of employment.'),
     description: z.string().describe('A bulleted list of 2-3 achievements, written in markdown.')
   })).describe('An array of 2-3 work experience items.'),
-  skills: z.array(z.string()).describe('A list of 5-7 relevant skills for the job title.'),
+  education: z.array(z.object({
+    id: z.string().describe('A unique ID for the education item.'),
+    institution: z.string().describe('Name of the university or school.'),
+    degree: z.string().describe('The degree obtained.'),
+    dates: z.string().describe('Plausible dates of attendance.'),
+    description: z.string().optional().describe('Optional GPA or honors, in markdown.')
+  })).describe('An array of 1-2 education entries.'),
+  skills: z.array(z.string()).describe('A list of 7-10 relevant skills for the job title.'),
+  languages: z.string().optional().describe('A comma-separated list of 2-3 languages.'),
+  certifications: z.array(z.object({
+      id: z.string().describe('A unique ID for the certification item.'),
+      name: z.string().describe('The name of the certification.'),
+      issuer: z.string().describe('The issuing organization.'),
+      date: z.string().describe('The date it was obtained.'),
+  })).optional().describe('An array of 1-2 relevant certifications.'),
+   publications: z.string().optional().describe('A description of 1-2 relevant publications, written in markdown.'),
 });
 export type AiResumeDemoOutput = z.infer<typeof AiResumeDemoOutputSchema>;
 
@@ -41,11 +59,16 @@ const prompt = ai.definePrompt({
   output: {schema: AiResumeDemoOutputSchema},
   prompt: `You are an expert resume writer. Generate a complete, high-quality, sample resume based on the following job title: {{{jobTitle}}}.
 
-The resume must include:
+The resume must be comprehensive and include all of the following sections:
 - A realistic person's name.
+- Contact information (email, phone, address).
 - A compelling professional summary.
 - 2-3 detailed work experience entries with bullet points for achievements.
+- 1-2 education entries.
 - A list of relevant skills.
+- A list of languages spoken.
+- 1-2 relevant certifications.
+- A brief publications section if applicable to the role.
 
 The tone should be professional and tailored to the job title. Ensure the experience descriptions start with strong action verbs.
 `,
