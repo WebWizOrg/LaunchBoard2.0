@@ -62,7 +62,7 @@ export function SiteHeader() {
   const navLinks = [
     { name: "Resume Builder", href: resumeBuilderHref },
     { name: "Portfolio Builder", href: portfolioBuilderHref },
-    { name: "Marketplace", href: "/marketplace" },
+    { name: "Marketplace", href: "/#marketplace-preview" },
     { name: "Dashboard", href: "/dashboard" },
   ]
 
