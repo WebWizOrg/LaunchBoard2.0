@@ -96,11 +96,11 @@ export default function SignupPage() {
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="space-y-1 text-center">
             <Link href="/" className="inline-block mx-auto">
-                 <Image src="/logo.png" alt="Launchboard Logo" width={180} height={48} className="dark:invert"/>
+                 <Image src="/logo.png" alt="LaunchPad Logo" width={180} height={48} className="dark:invert"/>
             </Link>
           <CardTitle className="text-2xl font-headline">Create an account</CardTitle>
           <CardDescription>
-            Enter your information to create your LAUNCHBOARD account
+            Enter your information to create your LAUNCHPAD account
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">

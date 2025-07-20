@@ -13,7 +13,8 @@ import {
   Share2,
   Bot,
   Upload,
-  PlayCircle
+  PlayCircle,
+  LayoutTemplate
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -70,7 +71,7 @@ export default function Home() {
       title: 'Software Engineer at TechCorp',
       avatar: 'https://placehold.co/48x48.png',
       hint: 'woman portrait',
-      text: 'Launchboard helped me create a professional resume in minutes. The AI suggestions were a game-changer and I landed my dream job!',
+      text: 'LaunchPad helped me create a professional resume in minutes. The AI suggestions were a game-changer and I landed my dream job!',
     },
     {
       name: 'Michael B.',
@@ -84,7 +85,7 @@ export default function Home() {
       title: 'Recent Graduate',
       avatar: 'https://placehold.co/48x48.png',
       hint: 'person smiling',
-      text: 'As a student, building a resume was daunting. Launchboard made it simple and fun. The online hosting is a huge plus for applications.',
+      text: 'As a student, building a resume was daunting. LaunchPad made it simple and fun. The online hosting is a huge plus for applications.',
     },
   ];
 
@@ -104,12 +105,12 @@ export default function Home() {
             <p className="max-w-2xl mx-auto mt-4 text-lg md:text-xl text-muted-foreground">
               The ultimate platform to create stunning resumes and portfolios that impress recruiters and land you your dream job.
             </p>
-            <div className="mt-8 flex justify-center gap-4">
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                <Link href="/signup">Get Started Free <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                <Link href="/builder">Create a Resume <FileText className="ml-2 h-5 w-5" /></Link>
               </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link href="#ai-demo">Try the AI Demo <ChevronRight className="ml-2 h-5 w-5" /></Link>
+              <Button asChild variant="secondary" size="lg">
+                <Link href="/portfolio/builder">Create a Portfolio <LayoutTemplate className="ml-2 h-5 w-5" /></Link>
               </Button>
             </div>
           </div>
@@ -120,7 +121,7 @@ export default function Home() {
           <div className="container mx-auto px-4 md:px-6">
             <div className="text-center">
               <h2 className="text-3xl md:text-4xl font-bold font-headline">
-                See Launchboard in Action
+                See LaunchPad in Action
               </h2>
               <p className="max-w-2xl mx-auto mt-4 text-lg text-muted-foreground">
                 Watch our quick introduction to see how you can build a stunning portfolio in minutes.
@@ -267,7 +268,7 @@ export default function Home() {
                 Loved by Professionals Worldwide
               </h2>
               <p className="max-w-2xl mx-auto mt-4 text-lg text-muted-foreground">
-                Hear what our users have to say about their success with Launchboard.
+                Hear what our users have to say about their success with LaunchPad.
               </p>
             </div>
             <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-3 mt-12">

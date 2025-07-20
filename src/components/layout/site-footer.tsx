@@ -19,7 +19,7 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="flex flex-col items-start">
             <Link href="/" className="flex items-center space-x-2 mb-4">
-               <Image src="/logo.png" alt="Launchboard Logo" width={150} height={40} className="dark:invert"/>
+               <Image src="/logo.png" alt="LaunchPad Logo" width={150} height={40} className="dark:invert"/>
             </Link>
             <p className="text-sm text-muted-foreground">Verified. Amplified. Launched.</p>
           </div>
@@ -48,7 +48,7 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="mt-8 border-t pt-6 flex flex-col md:flex-row items-center justify-between">
-          <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} LAUNCHBOARD. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} LAUNCHPAD. All rights reserved.</p>
           <div className="flex space-x-4 mt-4 md:mt-0">
             <Link href="#" aria-label="Twitter"><Twitter className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
             <Link href="#" aria-label="GitHub"><Github className="h-5 w-5 text-muted-foreground hover:text-foreground" /></Link>
