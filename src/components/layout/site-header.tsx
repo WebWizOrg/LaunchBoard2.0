@@ -76,7 +76,7 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-secondary/95 backdrop-blur supports-[backdrop-filter]:bg-secondary/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-muted/95 backdrop-blur supports-[backdrop-filter]:bg-muted/60">
       <div className="container flex h-16 items-center">
         {/* Mobile Nav Trigger */}
         <div className="md:hidden">

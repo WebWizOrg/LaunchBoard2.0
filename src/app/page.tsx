@@ -200,9 +200,9 @@ export default function Home() {
                               className="w-full h-auto object-cover"
                               data-ai-hint="artistic photo"
                            />
-                           <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs p-2 rounded-sm pointer-events-none z-20">
-                               <p className="font-semibold">Your Name</p>
-                               <p className="text-white/80">your.email@example.com</p>
+                           <div className="absolute bottom-2 left-2 bg-black/60 text-white text-sm p-2 rounded-md pointer-events-none z-20">
+                               <p className="font-bold">Your Name</p>
+                               <p className="text-white/80 text-xs">your.email@example.com</p>
                            </div>
                       </div>
                   }
